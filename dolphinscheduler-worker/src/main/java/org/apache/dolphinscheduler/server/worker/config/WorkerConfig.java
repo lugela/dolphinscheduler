@@ -79,4 +79,11 @@ public class WorkerConfig implements Validator {
         }
         workerConfig.setWorkerAddress(NetUtils.getAddr(workerConfig.getListenPort()));
     }
+    public boolean isTenantDistributedUser() {
+        return tenantDistributedUser;
+    }
+
+    public void setTenantDistributedUser(boolean tenantDistributedUser) {
+        this.tenantDistributedUser = tenantDistributedUser;
+    }
 }

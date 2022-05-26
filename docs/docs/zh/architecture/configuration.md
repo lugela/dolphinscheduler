@@ -260,16 +260,15 @@ common.properties配置文件目前主要是配置hadoop/s3/yarn相关的配置�
 位置：`worker-server/conf/application.yaml`
 |参数 |默认值| 描述| 
 |--|--|--|
-|worker.listen-port|1234|worker监听端口|
-|worker.exec-threads|100|worker工作线程数量,用于限制并行的任务实例数量|
-|worker.heartbeat-interval|10|worker心跳间隔,单位为秒|
+worker.listen.port|1234|worker监听端口
+worker.exec.threads|100|worker工作线程数量,用于限制并行的任务实例数量
+worker.heartbeat.interval|10|worker心跳间隔,单位为秒
 |worker.host-weight|100|派发任务时，worker主机的权重|
-|worker.tenant-auto-create|true|租户对应于系统的用户,由worker提交作业.如果系统没有该用户,则在参数worker.tenant.auto.create为true后自动创建。|
-|worker.max-cpu-load-avg|-1|worker最大cpuload均值,只有高于系统cpuload均值时,worker服务才能被派发任务. 默认值为-1: cpu cores * 2|
-|worker.reserved-memory|0.3|worker预留内存,只有低于系统可用内存时,worker服务才能被派发任务,单位为G|
-|worker.groups|default|worker分组配置,逗号分隔,例如'worker.groups=default,test' <br> worker启动时会根据该配置自动加入对应的分组|
-|worker.alert-listen-host|localhost|alert监听host|
-|worker.alert-listen-port|50052|alert监听端口|
+worker.max.cpuload.avg|-1|worker最大cpuload均值,只有高于系统cpuload均值时,worker服务才能被派发任务. 默认值为-1: cpu cores * 2
+worker.reserved.memory|0.3|worker预留内存,只有低于系统可用内存时,worker服务才能被派发任务,单位为G
+worker.groups|default|worker分组配置,逗号分隔,例如'worker.groups=default,test' <br> worker启动时会根据该配置自动加入对应的分组
+worker.tenant.auto.create|true|租户对应于系统的用户,由worker提交作业.如果系统没有该用户,则在参数worker.tenant.auto.create为true后自动创建。
+worker.tenant.distributed.user|false|使用场景为分布式用户例如使用FreeIpa创建的用户存于LDAP中.该参数只适用于Linux,当该参数为true时worker.tenant.auto.create将不生效,不会自动去创建租户
 
 
 ## Alert Server相关配置
