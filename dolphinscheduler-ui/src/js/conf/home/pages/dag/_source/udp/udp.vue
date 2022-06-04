@@ -118,7 +118,7 @@
         // Timeout alarm
         timeout: 0,
         // tenant code
-        tenantCode: 'default',
+        tenantCode: '',
         // checked Timeout alarm
         checkedTimeout: true
       }
@@ -161,6 +161,11 @@
       ok () {
         if (!this.name) {
           this.$message.warning(`${i18n.$t('DAG graph name cannot be empty')}`)
+          return
+        }
+
+        if (!this.tenantCode) {
+          this.$message.warning(`${i18n.$t('Tenant name cannot be empty')}`)
           return
         }
 
@@ -260,7 +265,7 @@
         if (dag.tenantCode) {
           this.tenantCode = dag.tenantCode
         } else {
-          this.tenantCode = this.store.state.user.userInfo.tenantCode || 'default'
+          this.tenantCode = this.store.state.user.userInfo.tenantCode
         }
       })
     },

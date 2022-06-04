@@ -68,6 +68,7 @@ export default {
   'Whether to update the process definition': '是否更新流程定义',
   Add: '添加',
   'DAG graph name cannot be empty': 'DAG图名称不能为空',
+  'Tenant name cannot be empty': '租户名称不能为空',
   'Create Datasource': '创建数据源',
   'Project Home': '工作流监控',
   'Project Manage': '项目管理',

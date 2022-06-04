@@ -23,6 +23,7 @@ import org.apache.dolphinscheduler.api.utils.PageInfo;
 import org.apache.dolphinscheduler.api.utils.RegexUtils;
 import org.apache.dolphinscheduler.api.utils.Result;
 import org.apache.dolphinscheduler.common.Constants;
+import org.apache.dolphinscheduler.common.enums.UserType;
 import org.apache.dolphinscheduler.common.utils.HadoopUtils;
 import org.apache.dolphinscheduler.common.utils.PropertyUtils;
 import org.apache.dolphinscheduler.dao.entity.ProcessDefinition;
@@ -289,10 +290,25 @@ public class TenantServiceImpl extends BaseServiceImpl implements TenantService 
      */
     @Override
     public Map<String, Object> queryTenantList(User loginUser) {
-
         Map<String, Object> result = new HashMap<>();
-
         List<Tenant> resourceList = tenantMapper.selectList(null);
+        UserType userType = loginUser.getUserType();
+        int tenantId = loginUser.getTenantId();
+        int code = userType.getCode();
+        if(0 != code){
+            Tenant tenantNew = null;
+            for (Tenant tenant : resourceList){
+                int id = tenant.getId();
+                if (id == tenantId){
+                    tenantNew = tenant;
+                    break;
+                }
+            }
+            if (null != tenantNew){
+                resourceList.clear();
+                resourceList.add(tenantNew);
+            }
+        }
         result.put(Constants.DATA_LIST, resourceList);
         putMsg(result, Status.SUCCESS);
 

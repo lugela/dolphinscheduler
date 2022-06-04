@@ -120,7 +120,7 @@ export default {
     state.name = (payload && payload.name) || ''
     state.description = (payload && payload.description) || ''
     state.timeout = (payload && payload.timeout) || 0
-    state.tenantCode = (payload && payload.tenantCode) || 'default'
+    state.tenantCode = (payload && payload.tenantCode) //|| 'default'
     state.processListS = (payload && payload.processListS) || []
     state.resourcesListS = (payload && payload.resourcesListS) || []
     state.resourcesListJar = (payload && payload.resourcesListJar) || []
