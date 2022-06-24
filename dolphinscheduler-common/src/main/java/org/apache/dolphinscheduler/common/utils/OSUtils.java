@@ -236,7 +236,9 @@ public class OSUtils {
             startPos++;
         }
 
-        if (users.contains(tenantCode))return true;
+        if (users.contains(tenantCode)){
+            return true;
+        }
 
         return false;
     }
