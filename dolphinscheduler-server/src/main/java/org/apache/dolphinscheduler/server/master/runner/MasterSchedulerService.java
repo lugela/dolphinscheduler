@@ -30,6 +30,7 @@ import org.apache.dolphinscheduler.remote.NettyRemotingClient;
 import org.apache.dolphinscheduler.remote.config.NettyClientConfig;
 import org.apache.dolphinscheduler.server.master.config.MasterConfig;
 import org.apache.dolphinscheduler.server.master.dispatch.executor.NettyExecutorManager;
+import org.apache.dolphinscheduler.server.master.metrics.MasterServerMetrics;
 import org.apache.dolphinscheduler.server.master.processor.queue.TaskResponseService;
 import org.apache.dolphinscheduler.server.master.registry.MasterRegistryClient;
 import org.apache.dolphinscheduler.server.master.registry.ServerNodeManager;
@@ -180,6 +181,7 @@ public class MasterSchedulerService extends Thread {
             try {
                 boolean runCheckFlag = OSUtils.checkResource(masterConfig.getMasterMaxCpuloadAvg(), masterConfig.getMasterReservedMemory());
                 if (!runCheckFlag) {
+                    MasterServerMetrics.incMasterOverload();
                     Thread.sleep(Constants.SLEEP_TIME_MILLIS);
                     continue;
                 }
@@ -244,6 +246,7 @@ public class MasterSchedulerService extends Thread {
             if (commandList.size() == 0) {
                 return null;
             }
+            MasterServerMetrics.incMasterConsumeCommand(commandList.size());
             for (Command command : commandList) {
                 int slot = ServerNodeManager.getSlot();
                 if (ServerNodeManager.MASTER_SIZE != 0 && command.getId() % ServerNodeManager.MASTER_SIZE == slot) {

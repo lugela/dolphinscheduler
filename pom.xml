@@ -229,6 +229,15 @@
                 <artifactId>dolphinscheduler-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+
+            <dependency>
+                <groupId>org.apache.dolphinscheduler</groupId>
+                <artifactId>dolphinscheduler-meter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+
             <dependency>
                 <groupId>org.apache.dolphinscheduler</groupId>
                 <artifactId>dolphinscheduler-standalone-server</artifactId>
@@ -596,7 +605,8 @@
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql.connector.version}</version>
-                <scope>test</scope>
+                <!--<scope>test</scope>-->
+                <scope>compile</scope>
             </dependency>
             <dependency>
                 <groupId>com.h2database</groupId>
@@ -1150,5 +1160,6 @@
         <module>dolphinscheduler-standalone-server</module>
         <module>dolphinscheduler-datasource-plugin</module>
         <module>dolphinscheduler-python</module>
+        <module>dolphinscheduler-meter</module>
     </modules>
 </project>
