@@ -36,6 +36,8 @@ import org.apache.dolphinscheduler.registry.api.ConnectionState;
 import org.apache.dolphinscheduler.remote.utils.NamedThreadFactory;
 import org.apache.dolphinscheduler.server.builder.TaskExecutionContextBuilder;
 import org.apache.dolphinscheduler.server.master.config.MasterConfig;
+import org.apache.dolphinscheduler.server.master.metrics.ProcessInstanceMetrics;
+import org.apache.dolphinscheduler.server.master.metrics.TaskMetrics;
 import org.apache.dolphinscheduler.server.master.runner.WorkflowExecuteThread;
 import org.apache.dolphinscheduler.server.registry.HeartBeatTask;
 import org.apache.dolphinscheduler.server.utils.ProcessUtils;
@@ -449,6 +451,7 @@ public class MasterRegistryClient {
             }
 
             logger.info("failover process instance id: {}", processInstance.getId());
+            ProcessInstanceMetrics.incProcessInstanceFailover();
             //updateProcessInstance host is null and insert into command
             processService.processNeedFailoverProcessInstances(processInstance);
         }
@@ -475,6 +478,7 @@ public class MasterRegistryClient {
             return;
         }
 
+        TaskMetrics.incTaskFailover();
         taskInstance.setProcessInstance(processInstance);
         TaskExecutionContext taskExecutionContext = TaskExecutionContextBuilder.get()
                 .buildTaskInstanceRelatedInfo(taskInstance)

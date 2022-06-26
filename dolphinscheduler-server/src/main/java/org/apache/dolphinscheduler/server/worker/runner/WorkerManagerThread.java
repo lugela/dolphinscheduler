@@ -17,6 +17,7 @@
 
 package org.apache.dolphinscheduler.server.worker.runner;
 
+import org.apache.dolphinscheduler.common.Constants;
 import org.apache.dolphinscheduler.common.enums.Event;
 import org.apache.dolphinscheduler.common.enums.ExecutionStatus;
 import org.apache.dolphinscheduler.common.thread.Stopper;
@@ -25,6 +26,7 @@ import org.apache.dolphinscheduler.common.utils.JSONUtils;
 import org.apache.dolphinscheduler.remote.command.TaskExecuteResponseCommand;
 import org.apache.dolphinscheduler.server.worker.cache.ResponceCache;
 import org.apache.dolphinscheduler.server.worker.config.WorkerConfig;
+import org.apache.dolphinscheduler.server.worker.metrics.WorkerServerMetrics;
 import org.apache.dolphinscheduler.server.worker.processor.TaskCallbackService;
 import org.apache.dolphinscheduler.service.bean.SpringApplicationContext;
 import org.apache.dolphinscheduler.service.queue.entity.TaskExecutionContext;
@@ -66,6 +68,9 @@ public class WorkerManagerThread implements Runnable {
      */
     private final WorkerExecService workerExecService;
 
+    private volatile int workerExecThreads;
+
+
     /**
      * task callback service
      */
@@ -73,6 +78,7 @@ public class WorkerManagerThread implements Runnable {
 
     public WorkerManagerThread() {
         this.workerConfig = SpringApplicationContext.getBean(WorkerConfig.class);
+        workerExecThreads = workerConfig.getWorkerExecThreads();
         this.workerExecService = new WorkerExecService(
                 ThreadUtils.newDaemonFixedThreadExecutor("Worker-Execute-Thread", this.workerConfig.getWorkerExecThreads()),
                 taskExecuteThreadMap
@@ -135,6 +141,15 @@ public class WorkerManagerThread implements Runnable {
      * @return submit result
      */
     public boolean offer(TaskExecuteThread taskExecuteThread) {
+        if (workerExecuteQueue.size() > workerExecThreads) {
+            WorkerServerMetrics.incWorkerSubmitQueueIsFullCount();
+            // if waitSubmitQueue is full, it will wait 1s, then try add
+            ThreadUtils.sleep(Constants.SLEEP_TIME_MILLIS);
+            if (workerExecuteQueue.size() > workerExecThreads) {
+                return false;
+            }
+        }
+
         return workerExecuteQueue.offer(taskExecuteThread);
     }
 
@@ -150,8 +165,18 @@ public class WorkerManagerThread implements Runnable {
         TaskExecuteThread taskExecuteThread;
         while (Stopper.isRunning()) {
             try {
-                taskExecuteThread = workerExecuteQueue.take();
-                workerExecService.submit(taskExecuteThread);
+
+                if (this.getThreadPoolQueueSize() <= workerExecThreads) {
+                    taskExecuteThread = workerExecuteQueue.take();
+                    workerExecService.submit(taskExecuteThread);
+                } else {
+                    WorkerServerMetrics.incWorkerOverloadCount();
+                    logger.info("Exec queue is full, waiting submit queue {}, waiting exec queue size {}",
+                            this.getDelayQueueSize(), this.getThreadPoolQueueSize());
+                    ThreadUtils.sleep(Constants.SLEEP_TIME_MILLIS);
+                }
+
+
             } catch (Exception e) {
                 logger.error("An unexpected interrupt is happened, "
                         + "the exception will be ignored and this thread will continue to run", e);
