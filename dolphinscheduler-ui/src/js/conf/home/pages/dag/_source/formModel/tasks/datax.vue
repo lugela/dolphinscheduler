@@ -184,14 +184,14 @@
   import disabledState from '@/module/mixin/disabledState'
   import mSelectInput from '../_source/selectInput'
   import codemirror from '@/conf/home/pages/resource/pages/file/pages/_source/codemirror'
-  import {diGuiTree, searchTree} from "./_source/resourceTree";
+  import { diGuiTree, searchTree } from './_source/resourceTree'
+  import Clipboard from "clipboard";
 
   let editor
   let jsonEditor
 
   export default {
     name: 'datax',
-
     data () {
       return {
         valueConsistsOf: 'LEAF_PRIORITY',
@@ -228,6 +228,11 @@
         cacheResourceList: [],
         // define options
         options: [],
+        normalizer (node) {
+          return {
+            label: node.name
+          }
+        },
         allNoResources: [],
         noRes: [],
         // Custom parameter
@@ -247,6 +252,25 @@
       createNodeId: Number
     },
     methods: {
+      _copyPath (e, node) {
+        e.stopPropagation()
+        let clipboard = new Clipboard('.copy-path', {
+          text: function () {
+            return node.raw.fullName
+          }
+        })
+        clipboard.on('success', handler => {
+          this.$message.success(`${i18n.$t('Copy success')}`)
+          // Free memory
+          clipboard.destroy()
+        })
+        clipboard.on('error', handler => {
+          // Copy is not supported
+          this.$message.warning(`${i18n.$t('The browser does not support automatic copying')}`)
+          // Free memory
+          clipboard.destroy()
+        })
+      },
       setEditorVal () {
         this.item = editor.getValue()
         this.scriptBoxDialog = true
@@ -328,7 +352,6 @@
           if (!this.$refs.refLocalParams._verifProp()) {
             return false
           }
-
 
           // Process resourcelist
           let dataProcessing = _.map(this.resourceList, v => {
@@ -536,17 +559,17 @@
       }
     },
     created () {
+      console.log('datax.vue create 方法')
+      let item = this.store.state.dag.resourcesListS
+      diGuiTree(item)
+      this.options = item
+      // backfill resourceList
       let o = this.backfillItem
       // Non-null objects represent backfill
       if (!_.isEmpty(o)) {
         // set jvm memory
         this.xms = o.params.xms || 1
         this.xmx = o.params.xmx || 1
-
-        let item = this.store.state.dag.resourcesListS
-
-
-
         // backfill
         if (o.params.customConfig === 0) {
           this.customConfig = 0
@@ -562,9 +585,6 @@
           this.preStatements = o.params.preStatements || []
           this.postStatements = o.params.postStatements || []
         } else {
-          diGuiTree(item)
-          this.options = item
-          // backfill resourceList
           let backResource = o.params.resourceList || []
           let resourceList = o.params.resourceList || []
           if (resourceList.length) {
