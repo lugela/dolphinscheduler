@@ -69,6 +69,7 @@ Please refer to the official website document: [QuickStart in Kubernetes](https:
 
 ```bash
 ./mvnw clean install -Prelease
+mvnw.cmd clean install -Prelease -DskipTests
 ```
 
 Artifact:
