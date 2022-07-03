@@ -218,14 +218,14 @@ public final class DingTalkSender {
 
         //处理钉钉的消息格式
         if (title.contains("success")){
-           title = "触警类型: [对勾] \n" + "事项: " + title;
+           title = "海豚调度触警类型: [对勾] \n" + "事项: " + title;
         }
         if (title.contains("failed")){
-            title = "触警类型: [打叉] \n" + "事项: " + title;
+            title = "海豚调度触警类型: [打叉] \n" + "事项: " + title;
         }
 
         if (title.contains("warning")){
-            title = "触警类型: [气泡] \n" + "事项: " + title;
+            title = "海豚调度触警类型: [气泡] \n" + "事项: " + title;
         }
 
         content = "详细说明:\n"+ jsonFormatStr(content);
@@ -251,8 +251,8 @@ public final class DingTalkSender {
 
         StringBuffer jsonForMatStr = new StringBuffer();
         int level = 0;
-        for(int index=0;index<resString.length();index++)//将字符串中的字符逐个按行输出
-        {
+        for(int index=0;index<resString.length();index++){
+            //将字符串中的字符逐个按行输出
             //获取s中的每个字符
             char c = resString.charAt(index);
 

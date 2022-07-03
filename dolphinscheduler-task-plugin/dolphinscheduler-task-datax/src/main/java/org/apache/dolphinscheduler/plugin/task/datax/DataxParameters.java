@@ -249,6 +249,7 @@ public class DataxParameters extends AbstractParameters {
         return "DataxParameters{"
                 + "customConfig=" + customConfig
                 + ", json='" + json + '\''
+                +", resourceList='" + resourceList + '\''
                 + ", dsType='" + dsType + '\''
                 + ", dataSource=" + dataSource
                 + ", dtType='" + dtType + '\''
