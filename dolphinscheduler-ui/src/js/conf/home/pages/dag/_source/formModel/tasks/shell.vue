@@ -174,7 +174,6 @@
         }
         // Process resourcelist
         let dataProcessing = _.map(this.resourceList, v => {
-          console.log('_verification:'+v)
           return {
             id: v
           }
@@ -307,14 +306,11 @@
       diGuiTree(item)
       this.options = item
       let o = this.backfillItem
-      console.log('shell.vue create 方法:')
-      console.log('======执行=---=======')
 
       // Non-null objects represent backfill
       if (!_.isEmpty(o)) {
-        console.log('======执行2-=======')
-
         this.rawScript = o.params.rawScript || ''
+
         // backfill resourceList
         let backResource = o.params.resourceList || []
         let resourceList = o.params.resourceList || []
@@ -345,8 +341,6 @@
           this.localParams = localParams
         }
       }
-      console.log('======执行3-=======')
-
     },
     mounted () {
       setTimeout(() => {

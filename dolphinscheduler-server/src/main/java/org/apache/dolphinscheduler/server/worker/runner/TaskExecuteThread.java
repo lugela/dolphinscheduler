@@ -143,7 +143,6 @@ public class TaskExecuteThread implements Runnable, Delayed {
             taskExecutionContext.setCurrentExecutionStatus(ExecutionStatus.RUNNING_EXECUTION);
             sendTaskExecuteRunningCommand(taskExecutionContext);
             int dryRun = taskExecutionContext.getDryRun();
-            logger.info("dryRun is......"+ dryRun);
             // copy hdfs/minio file to local
             if (dryRun == Constants.DRY_RUN_FLAG_NO) {
                 downloadResource(taskExecutionContext.getExecutePath(),
@@ -322,14 +321,6 @@ public class TaskExecuteThread implements Runnable, Delayed {
      * @param logger logger
      */
     private void downloadResource(String execLocalPath, Map<String, String> projectRes, Logger logger) {
-        Iterator<Map.Entry<String,String>> it=projectRes.entrySet().iterator();
-
-        while (it.hasNext()) {
-            Map.Entry<String, String> entry = it.next();
-            String key = entry.getKey();
-            String value = entry.getValue();
-            logger.info("get projectRes :key {} value ", key, value);
-        }
         if (MapUtils.isEmpty(projectRes)) {
             return;
         }

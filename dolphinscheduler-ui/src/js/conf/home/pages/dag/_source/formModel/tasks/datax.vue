@@ -192,6 +192,7 @@
 
   export default {
     name: 'datax',
+
     data () {
       return {
         valueConsistsOf: 'LEAF_PRIORITY',
@@ -565,6 +566,7 @@
       this.options = item
       // backfill resourceList
       let o = this.backfillItem
+
       // Non-null objects represent backfill
       if (!_.isEmpty(o)) {
         // set jvm memory
