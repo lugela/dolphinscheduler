@@ -130,6 +130,15 @@
         </div>
       </m-list-box>
       <m-list-box>
+        <div slot="text">{{$t('Resources')}}</div>
+        <div slot="content">
+          <treeselect  v-model="resourceList" :multiple="true" maxHeight="200" :options="options" :normalizer="normalizer" :disabled="isDetails" :value-consists-of="valueConsistsOf" :placeholder="$t('Please select resources')">
+            <div slot="value-label" slot-scope="{ node }">{{ node.raw.fullName }} <span  class="copy-path" @mousedown="_copyPath($event, node)" >&nbsp; <em class="el-icon-copy-document" data-container="body"  data-toggle="tooltip" :title="$t('Copy path')" ></em> &nbsp;  </span></div>
+          </treeselect>
+        </div>
+      </m-list-box>
+
+      <m-list-box>
         <div slot="text">{{$t('Custom Parameters')}}</div>
         <div slot="content">
           <m-local-params
@@ -170,18 +179,22 @@
   import mDatasource from './_source/datasource'
   import mLocalParams from './_source/localParams'
   import mStatementList from './_source/statementList'
+  import Treeselect from '@riophae/vue-treeselect'
+  import '@riophae/vue-treeselect/dist/vue-treeselect.css'
   import disabledState from '@/module/mixin/disabledState'
   import mSelectInput from '../_source/selectInput'
   import codemirror from '@/conf/home/pages/resource/pages/file/pages/_source/codemirror'
+  import { diGuiTree, searchTree } from './_source/resourceTree'
+  import Clipboard from "clipboard";
 
   let editor
   let jsonEditor
 
   export default {
     name: 'datax',
-
     data () {
       return {
+        valueConsistsOf: 'LEAF_PRIORITY',
         // Data Custom template
         enable: false,
         // Data source type
@@ -209,6 +222,19 @@
         jobSpeedByte: 0,
         // speed record
         jobSpeedRecord: 1000,
+        // resource(list)
+        resourceList: [],
+        // Cache ResourceList
+        cacheResourceList: [],
+        // define options
+        options: [],
+        normalizer (node) {
+          return {
+            label: node.name
+          }
+        },
+        allNoResources: [],
+        noRes: [],
         // Custom parameter
         localParams: [],
         customConfig: 0,
@@ -226,6 +252,25 @@
       createNodeId: Number
     },
     methods: {
+      _copyPath (e, node) {
+        e.stopPropagation()
+        let clipboard = new Clipboard('.copy-path', {
+          text: function () {
+            return node.raw.fullName
+          }
+        })
+        clipboard.on('success', handler => {
+          this.$message.success(`${i18n.$t('Copy success')}`)
+          // Free memory
+          clipboard.destroy()
+        })
+        clipboard.on('error', handler => {
+          // Copy is not supported
+          this.$message.warning(`${i18n.$t('The browser does not support automatic copying')}`)
+          // Free memory
+          clipboard.destroy()
+        })
+      },
       setEditorVal () {
         this.item = editor.getValue()
         this.scriptBoxDialog = true
@@ -272,6 +317,21 @@
       _onPostStatements (a) {
         this.postStatements = a
       },
+
+      /**
+       * return resourceList
+       *
+       */
+      _onResourcesData (a) {
+        this.resourceList = a
+      },
+      /**
+       * cache resourceList
+       */
+      _onCacheResourcesData (a) {
+        this.cacheResourceList = a
+      },
+
       /**
        * return localParams
        */
@@ -293,8 +353,16 @@
             return false
           }
 
+          // Process resourcelist
+          let dataProcessing = _.map(this.resourceList, v => {
+            return {
+              id: v
+            }
+          })
+
           // storage
           this.$emit('on-params', {
+            resourceList: dataProcessing,
             customConfig: this.customConfig,
             json: jsonEditor.getValue(),
             localParams: this.localParams,
@@ -411,6 +479,54 @@
 
         return jsonEditor
       },
+
+      dataProcess (backResource) {
+        let isResourceId = []
+        let resourceIdArr = []
+        if (this.resourceList.length > 0) {
+          this.resourceList.forEach(v => {
+            this.options.forEach(v1 => {
+              if (searchTree(v1, v)) {
+                isResourceId.push(searchTree(v1, v))
+              }
+            })
+          })
+          resourceIdArr = isResourceId.map(item => {
+            return item.id
+          })
+          Array.prototype.diff = function (a) {
+            return this.filter(function (i) { return a.indexOf(i) < 0 })
+          }
+          let diffSet = this.resourceList.diff(resourceIdArr)
+          let optionsCmp = []
+          if (diffSet.length > 0) {
+            diffSet.forEach(item => {
+              backResource.forEach(item1 => {
+                if (item === item1.id || item === item1.res) {
+                  optionsCmp.push(item1)
+                }
+              })
+            })
+          }
+          let noResources = [{
+            id: -1,
+            name: $t('Unauthorized or deleted resources'),
+            fullName: '/' + $t('Unauthorized or deleted resources'),
+            children: []
+          }]
+          if (optionsCmp.length > 0) {
+            this.allNoResources = optionsCmp
+            optionsCmp = optionsCmp.map(item => {
+              return { id: item.id, name: item.name, fullName: item.res }
+            })
+            optionsCmp.forEach(item => {
+              item.isNew = true
+            })
+            noResources[0].children = optionsCmp
+            this.options = this.options.concat(noResources)
+          }
+        }
+      },
       _cacheParams () {
         this.$emit('on-cache-params', {
           dsType: this.dsType,
@@ -443,8 +559,12 @@
       }
     },
     created () {
+      console.log('datax.vue create 方法')
+      let item = this.store.state.dag.resourcesListS
+      diGuiTree(item)
+      this.options = item
+      // backfill resourceList
       let o = this.backfillItem
-
       // Non-null objects represent backfill
       if (!_.isEmpty(o)) {
         // set jvm memory
@@ -465,6 +585,29 @@
           this.preStatements = o.params.preStatements || []
           this.postStatements = o.params.postStatements || []
         } else {
+          let backResource = o.params.resourceList || []
+          let resourceList = o.params.resourceList || []
+          if (resourceList.length) {
+            _.map(resourceList, v => {
+              if (!v.id) {
+                this.store.dispatch('dag/getResourceId', {
+                  type: 'FILE',
+                  fullName: '/' + v.res
+                }).then(res => {
+                  this.resourceList.push(res.id)
+                  this.dataProcess(backResource)
+                }).catch(e => {
+                  this.resourceList.push(v.res)
+                  this.dataProcess(backResource)
+                })
+              } else {
+                this.resourceList.push(v.id)
+                this.dataProcess(backResource)
+              }
+            })
+            this.cacheResourceList = resourceList
+          }
+
           this.customConfig = 1
           this.enable = true
           this.json = o.params.json || []
@@ -499,10 +642,42 @@
     watch: {
       // Watch the cacheParams
       cacheParams (val) {
-        this._cacheParams()
+        //this._cacheParams()
+        this.$emit('on-cache-params', val)
+      },
+      resourceIdArr (arr) {
+        let result = []
+        arr.forEach(item => {
+          this.allNoResources.forEach(item1 => {
+            if (item.id === item1.id) {
+              // resultBool = true
+              result.push(item1)
+            }
+          })
+        })
+        this.noRes = result
       }
+
     },
     computed: {
+      resourceIdArr () {
+        let isResourceId = []
+        let resourceIdArr = []
+        if (this.resourceList.length > 0) {
+          this.resourceList.forEach(v => {
+            this.options.forEach(v1 => {
+              if (searchTree(v1, v)) {
+                isResourceId.push(searchTree(v1, v))
+              }
+            })
+          })
+          resourceIdArr = isResourceId.map(item => {
+            return { id: item.id, name: item.name, res: item.fullName }
+          })
+        }
+        return resourceIdArr
+      },
+
       cacheParams () {
         return {
           dsType: this.dsType,
@@ -517,6 +692,6 @@
         }
       }
     },
-    components: { mListBox, mDatasource, mLocalParams, mStatementList, mSelectInput, mScriptBox }
+    components: { mListBox, mDatasource, mLocalParams, mStatementList, mSelectInput, mScriptBox, Treeselect }
   }
 </script>

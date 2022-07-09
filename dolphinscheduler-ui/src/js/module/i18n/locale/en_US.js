@@ -68,6 +68,7 @@ export default {
   'Whether to update the process definition': 'Whether to update the process definition',
   Add: 'Add',
   'DAG graph name cannot be empty': 'DAG graph name cannot be empty',
+  'Tenant name cannot be empty': 'Tenant name cannot be empty',
   'Create Datasource': 'Create Datasource',
   'Project Home': 'Workflow Monitor',
   'Project Manage': 'Project',

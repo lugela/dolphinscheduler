@@ -25,6 +25,7 @@ import org.apache.dolphinscheduler.server.master.dispatch.ExecutorDispatcher;
 import org.apache.dolphinscheduler.server.master.dispatch.context.ExecutionContext;
 import org.apache.dolphinscheduler.server.master.dispatch.enums.ExecutorType;
 import org.apache.dolphinscheduler.server.master.dispatch.exceptions.ExecuteException;
+import org.apache.dolphinscheduler.server.master.metrics.TaskMetrics;
 import org.apache.dolphinscheduler.service.process.ProcessService;
 import org.apache.dolphinscheduler.service.queue.TaskPriority;
 import org.apache.dolphinscheduler.service.queue.TaskPriorityQueue;
@@ -104,6 +105,7 @@ public class TaskPriorityQueueConsumer extends Thread {
                     }
                 }
                 if (!failedDispatchTasks.isEmpty()) {
+                    TaskMetrics.incTaskDispatchFailed(failedDispatchTasks.size());
                     for (TaskPriority dispatchFailedTask : failedDispatchTasks) {
                         taskPriorityQueue.put(dispatchFailedTask);
                     }
@@ -114,6 +116,7 @@ public class TaskPriorityQueueConsumer extends Thread {
                     }
                 }
             } catch (Exception e) {
+                TaskMetrics.incTaskDispatchError();
                 logger.error("dispatcher task error", e);
             }
         }
@@ -126,6 +129,7 @@ public class TaskPriorityQueueConsumer extends Thread {
      * @return result
      */
     protected boolean dispatch(TaskPriority taskPriority) {
+        TaskMetrics.incTaskDispatch();
         boolean result = false;
         try {
             TaskExecutionContext context = taskPriority.getTaskExecutionContext();

@@ -60,6 +60,8 @@ import org.apache.dolphinscheduler.remote.command.HostUpdateCommand;
 import org.apache.dolphinscheduler.remote.utils.Host;
 import org.apache.dolphinscheduler.server.master.config.MasterConfig;
 import org.apache.dolphinscheduler.server.master.dispatch.executor.NettyExecutorManager;
+import org.apache.dolphinscheduler.server.master.metrics.ProcessInstanceMetrics;
+import org.apache.dolphinscheduler.server.master.metrics.TaskMetrics;
 import org.apache.dolphinscheduler.server.master.processor.queue.TaskResponseEvent;
 import org.apache.dolphinscheduler.server.master.processor.queue.TaskResponseService;
 import org.apache.dolphinscheduler.server.master.runner.task.ITaskProcessor;
@@ -89,10 +91,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
+
 
 /**
  * master exec thread,split dag
@@ -313,15 +315,19 @@ public class WorkflowExecuteThread implements Runnable {
         boolean result = false;
         switch (stateEvent.getType()) {
             case PROCESS_STATE_CHANGE:
+                measureProcessState(stateEvent);
                 result = processStateChangeHandler(stateEvent);
                 break;
             case TASK_STATE_CHANGE:
+                measureTaskState(stateEvent);
                 result = taskStateChangeHandler(stateEvent);
                 break;
             case PROCESS_TIMEOUT:
+                ProcessInstanceMetrics.incProcessInstanceTimeout();
                 result = processTimeout();
                 break;
             case TASK_TIMEOUT:
+                TaskMetrics.incTaskTimeout();
                 result = taskTimeout(stateEvent);
                 break;
             default:
@@ -1359,6 +1365,7 @@ public class WorkflowExecuteThread implements Runnable {
             }
             logger.info("add task to stand by list, task name:{}, task id:{}, task code:{}",
                     taskInstance.getName(), taskInstance.getId(), taskInstance.getTaskCode());
+            TaskMetrics.incTaskSubmit();
             readyToSubmitTaskQueue.put(taskInstance);
         } catch (Exception e) {
             logger.error("add task instance to readyToSubmitTaskQueue, taskName:{}, task id:{}", taskInstance.getName(), taskInstance.getId(), e);
@@ -1597,5 +1604,51 @@ public class WorkflowExecuteThread implements Runnable {
 
     public Map<Integer, ITaskProcessor> getActiveTaskProcessorMaps() {
         return activeTaskProcessorMaps;
+    }
+
+
+
+    private void measureTaskState(StateEvent taskStateEvent) {
+        if (taskStateEvent == null || taskStateEvent.getExecutionStatus() == null) {
+            // the event is broken
+            logger.warn("The task event is broken..., taskEvent: {}", taskStateEvent);
+            return;
+        }
+        if (taskStateEvent.getExecutionStatus().typeIsFinished()) {
+            TaskMetrics.incTaskFinish();
+        }
+        switch (taskStateEvent.getExecutionStatus()) {
+            case STOP:
+                TaskMetrics.incTaskStop();
+                break;
+            case SUCCESS:
+                TaskMetrics.incTaskSuccess();
+                break;
+            case FAILURE:
+                TaskMetrics.incTaskFailure();
+                break;
+            default:
+                break;
+        }
+    }
+
+
+    private void measureProcessState(StateEvent processStateEvent) {
+        if (processStateEvent.getExecutionStatus().typeIsFinished()) {
+            ProcessInstanceMetrics.incProcessInstanceFinish();
+        }
+        switch (processStateEvent.getExecutionStatus()) {
+            case STOP:
+                ProcessInstanceMetrics.incProcessInstanceStop();
+                break;
+            case SUCCESS:
+                ProcessInstanceMetrics.incProcessInstanceSuccess();
+                break;
+            case FAILURE:
+                ProcessInstanceMetrics.incProcessInstanceFailure();
+                break;
+            default:
+                break;
+        }
     }
 }

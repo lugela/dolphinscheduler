@@ -100,6 +100,11 @@ public class DataxParameters extends AbstractParameters {
      */
     private int xmx;
 
+    /**
+     * resource list
+     */
+    private List<ResourceInfo> resourceList;
+
     public int getCustomConfig() {
         return customConfig;
     }
@@ -212,6 +217,16 @@ public class DataxParameters extends AbstractParameters {
         this.xmx = xmx;
     }
 
+
+    public List<ResourceInfo> getResourceList() {
+        return resourceList;
+    }
+
+    public void setResourceList(List<ResourceInfo> resourceList) {
+        this.resourceList = resourceList;
+    }
+
+
     @Override
     public boolean checkParameters() {
         if (customConfig == Flag.NO.ordinal()) {
@@ -226,7 +241,7 @@ public class DataxParameters extends AbstractParameters {
 
     @Override
     public List<ResourceInfo> getResourceFilesList() {
-        return new ArrayList<>();
+        return resourceList;
     }
 
     @Override
@@ -234,6 +249,7 @@ public class DataxParameters extends AbstractParameters {
         return "DataxParameters{"
                 + "customConfig=" + customConfig
                 + ", json='" + json + '\''
+                +", resourceList='" + resourceList + '\''
                 + ", dsType='" + dsType + '\''
                 + ", dataSource=" + dataSource
                 + ", dtType='" + dtType + '\''

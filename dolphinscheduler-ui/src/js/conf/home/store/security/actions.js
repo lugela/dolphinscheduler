@@ -282,14 +282,10 @@ export default {
   /**
    * Tenant list - no paging
    */
-  getTenantList ({ state }, payload) {
+   getTenantList ({ state }, payload) {
     return new Promise((resolve, reject) => {
       io.get('tenants/list', payload, res => {
         const list = res.data
-        list.unshift({
-          id: -1,
-          tenantCode: 'default'
-        })
         state.tenantAllList = list
         resolve(list)
       }).catch(e => {

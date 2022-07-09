@@ -58,7 +58,7 @@
     </dependencies>
 
     <profiles>
-        <profile>
+        <!--<profile>
             <id>release</id>
             <build>
                 <plugins>
@@ -79,7 +79,7 @@
                                         <argument>-m</argument>
                                         <argument>pip</argument>
                                         <argument>install</argument>
-                                        <argument>--upgrade</argument>
+                                        <argument>&#45;&#45;upgrade</argument>
                                         <argument>pip</argument>
                                         <argument>.[build]</argument>
                                     </arguments>
@@ -119,6 +119,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
+        </profile>-->
     </profiles>
 </project>

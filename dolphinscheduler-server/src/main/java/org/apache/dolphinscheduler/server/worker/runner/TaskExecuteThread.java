@@ -45,11 +45,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -129,7 +125,7 @@ public class TaskExecuteThread implements Runnable, Delayed {
             taskExecutionContext.setExecutePath(execLocalPath);
 
             // check if the OS user exists
-            if (!OSUtils.getUserList().contains(taskExecutionContext.getTenantCode())) {
+            if (!OSUtils.isExistTenantCode(taskExecutionContext.getTenantCode())) {
                 String errorLog = String.format("tenantCode: %s does not exist", taskExecutionContext.getTenantCode());
                 logger.error(errorLog);
                 responseCommand.setStatus(ExecutionStatus.FAILURE.getCode());
@@ -147,6 +143,7 @@ public class TaskExecuteThread implements Runnable, Delayed {
             taskExecutionContext.setCurrentExecutionStatus(ExecutionStatus.RUNNING_EXECUTION);
             sendTaskExecuteRunningCommand(taskExecutionContext);
             int dryRun = taskExecutionContext.getDryRun();
+            logger.info("dryRun is......"+ dryRun);
             // copy hdfs/minio file to local
             if (dryRun == Constants.DRY_RUN_FLAG_NO) {
                 downloadResource(taskExecutionContext.getExecutePath(),
@@ -325,6 +322,14 @@ public class TaskExecuteThread implements Runnable, Delayed {
      * @param logger logger
      */
     private void downloadResource(String execLocalPath, Map<String, String> projectRes, Logger logger) {
+        Iterator<Map.Entry<String,String>> it=projectRes.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<String, String> entry = it.next();
+            String key = entry.getKey();
+            String value = entry.getValue();
+            logger.info("get projectRes :key {} value ", key, value);
+        }
         if (MapUtils.isEmpty(projectRes)) {
             return;
         }

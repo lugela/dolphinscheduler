@@ -138,6 +138,8 @@ public class TenantController extends BaseController {
     @ApiException(QUERY_TENANT_LIST_ERROR)
     @AccessLogAnnotation(ignoreRequestArgs = "loginUser")
     public Result queryTenantlist(@ApiIgnore @RequestAttribute(value = Constants.SESSION_USER) User loginUser) {
+        //Determines whether the current tenant is an administrator, and the administrator displays all tenants. Ordinary users are bound tenant
+
         Map<String, Object> result = tenantService.queryTenantList(loginUser);
         return returnDataList(result);
     }

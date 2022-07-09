@@ -168,65 +168,74 @@ public class OSUtils {
         return Double.parseDouble(df.format(cpuUsage));
     }
 
-    public static List<String> getUserList() {
+    /**
+     * Determine if the tenantCode exists in the system
+     * @return boolean
+     **/
+    public static boolean isExistTenantCode(String tenantCode){
+
         try {
             if (SystemUtils.IS_OS_MAC) {
-                return getUserListFromMac();
+                return existTenantCodeInMac(tenantCode);
             } else if (SystemUtils.IS_OS_WINDOWS) {
-                return getUserListFromWindows();
+                return existTenantCodeInWindows(tenantCode);
             } else {
-                return getUserListFromLinux();
+                return existTenantCodeInLinux(tenantCode);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
 
-        return Collections.emptyList();
+        return false;
+
     }
 
     /**
-     * get user list from linux
+     * whether the user exists in linux
      *
-     * @return user list
+     * @return boolean
      */
-    private static List<String> getUserListFromLinux() throws IOException {
-        List<String> userList = new ArrayList<>();
-
-        try (BufferedReader bufferedReader = new BufferedReader(
-                new InputStreamReader(new FileInputStream("/etc/passwd")))) {
-            String line;
-
-            while ((line = bufferedReader.readLine()) != null) {
-                if (line.contains(":")) {
-                    String[] userInfo = line.split(":");
-                    userList.add(userInfo[0]);
-                }
+    private static boolean existTenantCodeInLinux(String tenantCode) throws IOException {
+        try {
+            String result = exeCmd("id " + tenantCode);
+            if (!StringUtils.isEmpty(result)) {
+                return result.contains("uid=");
+            }
+        } catch (IOException el) {
+            String message = el.getMessage();
+            //Because ShellExecutor method throws  exception to the linux return status is not 0
+            //not exist user return status is 1
+            if (message.contains("no such user")) {
+                logger.warn(message);
+            }else {
+                throw el;
             }
         }
-
-        return userList;
+        return false;
     }
 
     /**
-     * get user list from mac
+     * whether the user exists in mac
      *
-     * @return user list
+     * @return boolean
      */
-    private static List<String> getUserListFromMac() throws IOException {
+    private static boolean existTenantCodeInMac(String tenantCode) throws IOException {
         String result = exeCmd("dscl . list /users");
         if (!StringUtils.isEmpty(result)) {
-            return Arrays.asList(result.split("\n"));
+            List<String> userMacs = Arrays.asList(result.split("\n"));
+            if (userMacs.contains(tenantCode)) {
+                return true;
+            }
         }
-
-        return Collections.emptyList();
+        return false;
     }
 
     /**
-     * get user list from windows
+     * whether the user exists in windows
      *
-     * @return user list
+     * @return boolean
      */
-    private static List<String> getUserListFromWindows() throws IOException {
+    private static boolean existTenantCodeInWindows(String tenantCode) throws IOException {
         String result = exeCmd("net user");
         String[] lines = result.split("\n");
 
@@ -258,7 +267,11 @@ public class OSUtils {
             startPos++;
         }
 
-        return users;
+        if (users.contains(tenantCode)){
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -268,7 +281,7 @@ public class OSUtils {
      */
     public static void createUserIfAbsent(String userName) {
         // if not exists this user, then create
-        if (!getUserList().contains(userName)) {
+        if (!isExistTenantCode(userName)) {
             boolean isSuccess = createUser(userName);
             logger.info("create user {} {}", userName, isSuccess ? "success" : "fail");
         }
