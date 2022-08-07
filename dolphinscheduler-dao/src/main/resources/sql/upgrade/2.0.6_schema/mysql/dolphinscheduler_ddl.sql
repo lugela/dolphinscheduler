@@ -36,3 +36,7 @@ d//
 delimiter ;
 CALL uc_dolphin_T_t_ds_resources_R_full_name;
 DROP PROCEDURE uc_dolphin_T_t_ds_resources_R_full_name;
+
+-- 绑定
+ALTER TABLE t_ds_user ADD worker_group_list varchar(200);
+ALTER TABLE t_ds_user ADD alert_group_list varchar(200);
