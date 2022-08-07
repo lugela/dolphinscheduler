@@ -342,11 +342,11 @@
             this.userState = this.item.state + '' || '1'
             this.showState = this.item.id !== this.userInfo.id
 
-            if ( this.item.workerGroupList==null || this.item.workerGroupList.length()==0){
+            if ( this.item.workerGroupList!=null || this.item.workerGroupList.length()!=0){
               this.workerGroupList = this.item.workerGroupList.split(',')
             }
             this.alertGroupList= this.item.alertGroupList.split(',')
-            if ( this.item.alertGroupList==null || this.item.alertGroupList.length()==0){
+            if ( this.item.alertGroupList!=null || this.item.alertGroupList.length()!=0){
               this.alertGroupList = this.item.alertGroupList.split(',')
             }
 

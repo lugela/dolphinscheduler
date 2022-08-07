@@ -31,6 +31,7 @@ import org.apache.dolphinscheduler.api.service.AlertGroupService;
 import org.apache.dolphinscheduler.api.utils.Result;
 import org.apache.dolphinscheduler.common.Constants;
 import org.apache.dolphinscheduler.common.utils.ParameterUtils;
+import org.apache.dolphinscheduler.dao.entity.AlertGroup;
 import org.apache.dolphinscheduler.dao.entity.User;
 
 import java.util.ArrayList;
@@ -118,10 +119,19 @@ public class AlertGroupController extends BaseController {
             String alertGroupList = loginUser.getAlertGroupList();
             if (null!= alertGroupList && !alertGroupList.isEmpty()){
                 List<String> userWorkerGroups = Arrays.asList(alertGroupList.split(","));
-                result.put("data",userWorkerGroups);
-            }else {
-                result.put("data",new ArrayList<String>());
+                List<AlertGroup> alertGroups=new ArrayList<>();
+                List<AlertGroup> alertGroupAll = (List<AlertGroup>)result.get("data");
+                if (null != alertGroupAll && !alertGroupAll.isEmpty()){
+                    for (AlertGroup alertGroup:alertGroupAll){
+                        if (userWorkerGroups.contains( alertGroup.getGroupName())){
+                            alertGroups.add(alertGroup);
+                        }
 
+                    }
+                }
+                result.put("data",alertGroups);
+            }else {
+                result.put("data",new ArrayList<AlertGroup>());
             }
 
         }
