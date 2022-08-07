@@ -33,6 +33,9 @@ import org.apache.dolphinscheduler.common.Constants;
 import org.apache.dolphinscheduler.common.utils.ParameterUtils;
 import org.apache.dolphinscheduler.dao.entity.User;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -110,6 +113,19 @@ public class AlertGroupController extends BaseController {
     public Result list(@ApiIgnore @RequestAttribute(value = Constants.SESSION_USER) User loginUser) {
 
         Map<String, Object> result = alertGroupService.queryAlertgroup();
+        if (1 == loginUser.getUserType().getCode()){
+            //普通用户
+            String alertGroupList = loginUser.getAlertGroupList();
+            if (null!= alertGroupList && !alertGroupList.isEmpty()){
+                List<String> userWorkerGroups = Arrays.asList(alertGroupList.split(","));
+                result.put("data",userWorkerGroups);
+            }else {
+                result.put("data",new ArrayList<String>());
+
+            }
+
+        }
+
         return returnDataList(result);
     }
 

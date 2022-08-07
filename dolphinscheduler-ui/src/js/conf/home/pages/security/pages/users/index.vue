@@ -24,7 +24,7 @@
             :title="item ? $t('Edit User') : $t('Create User')"
             v-if="createUserDialog"
             :visible.sync="createUserDialog"
-            width="auto">
+            width=40%>
             <m-create-user :item="item" @onUpdate="onUpdate" @close="close"></m-create-user>
           </el-dialog>
         </template>

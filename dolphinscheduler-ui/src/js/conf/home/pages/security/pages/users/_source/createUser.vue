@@ -20,7 +20,7 @@
           :ok-text="item ? $t('Edit') : $t('Submit')"
           @ok="_ok"
           @close="close">
-    <template slot="content">
+    <template slot="content" >
       <div class="create-user-model">
         <m-list-box-f>
           <template slot="name"><strong>*</strong>{{$t('User Name')}}</template>
@@ -58,6 +58,19 @@
             </el-select>
           </template>
         </m-list-box-f>
+        <m-list-box-f v-if="isADMIN">
+          <template slot="name"><strong>*</strong>{{$t('Worker')}}</template>
+          <template slot="content">
+            <treeselect :options="this.workerGroupALL" v-model="workerGroupList" :multiple="true" :placeholder="$t('Please select the worker group')"></treeselect>
+          </template>
+        </m-list-box-f>
+        <m-list-box-f v-if="isADMIN">
+          <template slot="name"><strong>*</strong>{{$t('Alarm group')}}</template>
+          <template slot="content">
+            <treeselect :options="this.alertGroupALL" v-model="alertGroupList" :multiple="true" :placeholder="$t('Please select the alert group')"></treeselect>
+          </template>
+        </m-list-box-f>
+
         <m-list-box-f v-if="isADMIN">
           <template slot="name">{{$t('Queue')}}</template>
           <template slot="content">
@@ -118,6 +131,8 @@
   import mPopover from '@/module/components/popup/popover'
   import mListBoxF from '@/module/components/listBoxF/listBoxF'
   import { mapState } from 'vuex'
+  import Treeselect from '@riophae/vue-treeselect'
+  import '@riophae/vue-treeselect/dist/vue-treeselect.css'
 
   export default {
     name: 'create-user',
@@ -135,6 +150,10 @@
         userState: '1',
         tenantList: [],
         showState: true,
+        workerGroupList: [],
+        workerGroupALL: [],
+        alertGroupList: [],
+        alertGroupALL: [],
         // Source admin user information
         isADMIN: store.state.user.userInfo.userType === 'ADMIN_USER' && router.history.current.name !== 'account'
       }
@@ -256,6 +275,21 @@
           })
         })
       },
+      _getWorkerGroupList () {
+        this.store.dispatch('security/getWorkerGroupsAll').then(ress => {
+          for(var res_index in ress){
+            this.workerGroupALL.push({id:ress[res_index].id,label: ress[res_index].id})
+          }
+        })
+      },
+
+      _getAlarmGroupList () {
+        this.store.dispatch('security/getAlarmGroupsAll').then(res => {
+          console.info(res)
+          this.alertGroupALL = res.data.map(x =>({id: x.groupName,label: x.groupName}))
+        })
+      },
+
       _submit () {
         this.$refs.popover.spinnerLoading = true
 
@@ -271,7 +305,9 @@
           email: this.email,
           queue: queueCode,
           phone: this.phone,
-          state: this.userState
+          state: this.userState,
+          workerGroupList: this.workerGroupList.join(','),
+          alertGroupList: this.alertGroupList.join(',')
         }
 
         if (this.item) {
@@ -296,7 +332,7 @@
       // Administrator gets tenant list
       this.showState = true
       if (this.isADMIN) {
-        Promise.all([this._getQueueList(), this._getTenantList()]).then(() => {
+        Promise.all([this._getQueueList(), this._getTenantList(),this._getWorkerGroupList(),this._getAlarmGroupList()]).then(() => {
           if (this.item) {
             this.userName = this.item.userName
             this.userPassword = ''
@@ -305,6 +341,16 @@
             this.state = this.item.state
             this.userState = this.item.state + '' || '1'
             this.showState = this.item.id !== this.userInfo.id
+
+            if ( this.item.workerGroupList==null || this.item.workerGroupList.length()==0){
+              this.workerGroupList = this.item.workerGroupList.split(',')
+            }
+            this.alertGroupList= this.item.alertGroupList.split(',')
+            if ( this.item.alertGroupList==null || this.item.alertGroupList.length()==0){
+              this.alertGroupList = this.item.alertGroupList.split(',')
+            }
+
+
             if (this.fromUserInfo || this.item.tenantId) {
               this.tenantId = this.item.tenantId
             }
@@ -325,6 +371,10 @@
           this.state = this.item.state
           this.userState = this.state + '' || '1'
           this.showState = this.item.id !== this.userInfo.id
+          //this.workerGroupALL = this.item.workerGroupALL
+          this.workerGroupList = this.item.workerGroupList.split(',')
+          this.alertGroupList= this.item.alertGroupList.split(',')
+
           if (this.fromUserInfo || this.item.tenantId) {
             this.tenantId = this.item.tenantId
           }
@@ -344,6 +394,6 @@
     computed: {
       ...mapState('user', ['userInfo'])
     },
-    components: { mPopover, mListBoxF }
+    components: { mPopover, mListBoxF,Treeselect }
   }
 </script>

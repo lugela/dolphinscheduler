@@ -26,6 +26,8 @@
           </template>
         </el-table-column>
         <el-table-column prop="tenantCode" :label="$t('Tenant')" min-width="120"></el-table-column>
+        <el-table-column prop="workerGroupList" :label="$t('Worker')" min-width="120"></el-table-column>
+        <el-table-column prop="alertGroupList" :label="$t('Alarm group')" min-width="120"></el-table-column>
         <el-table-column prop="queue" :label="$t('Queue')" width="90"></el-table-column>
         <el-table-column prop="email" :label="$t('Email')" min-width="200"></el-table-column>
         <el-table-column prop="phone" :label="$t('Phone')" width="100">

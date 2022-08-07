@@ -74,6 +74,16 @@ public class  User {
     private int state;
 
     /**
+     * user workerGroupsList
+     */
+    private String workerGroupList;
+
+    /**
+     * user alertGroupList
+     */
+    private String alertGroupList;
+
+    /**
      * tenant code
      */
     @TableField(exist = false)
@@ -107,6 +117,23 @@ public class  User {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss",timezone="GMT+8")
     private Date updateTime;
+
+
+    public String getWorkerGroupList() {
+        return workerGroupList;
+    }
+
+    public void setWorkerGroupList(String workerGroupList) {
+        this.workerGroupList = workerGroupList;
+    }
+
+    public String getAlertGroupList() {
+        return alertGroupList;
+    }
+
+    public void setAlertGroupList(String alertGroupList) {
+        this.alertGroupList = alertGroupList;
+    }
 
     public int getId() {
         return id;
@@ -220,6 +247,7 @@ public class  User {
     public void setState(int state) {
         this.state = state;
     }
+
 
     @Override
     public boolean equals(Object o) {
