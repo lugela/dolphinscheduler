@@ -215,6 +215,22 @@ public final class DingTalkSender {
         Map<String, Object> text = new HashMap<>();
         items.put(msgType, text);
 
+        //处理钉钉的消息格式
+        if (title.contains("success")){
+           title = "海豚调度触警类型: [对勾] \n" + "事项: " + title;
+        }
+        if (title.contains("failed")){
+            title = "海豚调度触警类型: [打叉] \n" + "事项: " + title;
+        }
+
+        if (title.contains("warning")){
+            title = "海豚调度触警类型: [气泡] \n" + "事项: " + title;
+        }
+
+        content = "详细说明:\n"+ jsonFormatStr(content);
+
+
+
         if (DingTalkParamsConstants.DING_TALK_MSG_TYPE_MARKDOWN.equals(msgType)) {
             generateMarkdownMsg(title, content, text);
         } else {
@@ -226,6 +242,56 @@ public final class DingTalkSender {
 
     }
 
+
+    /**
+     json格式化
+     */
+    public  String jsonFormatStr(String resString){
+
+        StringBuffer jsonForMatStr = new StringBuffer();
+        int level = 0;
+        for(int index=0;index<resString.length();index++){
+            //将字符串中的字符逐个按行输出
+            //获取s中的每个字符
+            char c = resString.charAt(index);
+
+            //level大于0并且jsonForMatStr中的最后一个字符为\n,jsonForMatStr加入\t
+            if (level > 0  && '\n' == jsonForMatStr.charAt(jsonForMatStr.length() - 1)) {
+                jsonForMatStr.append(getLevelStr(level));
+            }
+            //遇到"{"和"["要增加空格和换行，遇到"}"和"]"要减少空格，以对应，遇到","要换行
+            switch (c) {
+                case '{':
+                case '[':
+                    jsonForMatStr.append(c + "\n");
+                    level++;
+                    break;
+                case ',':
+                    jsonForMatStr.append(c + "\n");
+                    break;
+                case '}':
+                case ']':
+                    jsonForMatStr.append("\n");
+                    level--;
+                    jsonForMatStr.append(getLevelStr(level));
+                    jsonForMatStr.append(c);
+                    break;
+                default:
+                    jsonForMatStr.append(c);
+                    break;
+            }
+        }
+        return jsonForMatStr.toString();
+    }
+    /**
+     */
+    public  String getLevelStr(int level) {
+        StringBuffer levelStr = new StringBuffer();
+        for (int levelI = 0; levelI < level; levelI++) {
+            levelStr.append("\t");
+        }
+        return levelStr.toString();
+    }
     /**
      * generate text msg
      *
