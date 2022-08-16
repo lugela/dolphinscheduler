@@ -111,8 +111,10 @@ public class UsersController extends BaseController {
                              @RequestParam(value = "queue", required = false, defaultValue = "") String queue,
                              @RequestParam(value = "email") String email,
                              @RequestParam(value = "phone", required = false) String phone,
-                             @RequestParam(value = "state", required = false) int state) throws Exception {
-        Map<String, Object> result = usersService.createUser(loginUser, userName, userPassword, email, tenantId, phone, queue, state);
+                             @RequestParam(value = "state", required = false) int state,
+                             @RequestParam(value = "workerGroupList", required = false) String workerGroupList,
+                             @RequestParam(value = "alertGroupList", required = false) String alertGroupList) throws Exception {
+        Map<String, Object> result = usersService.createUser(loginUser, userName, userPassword, email, tenantId, phone, queue, state,workerGroupList,alertGroupList);
         return returnDataList(result);
     }
 
@@ -187,8 +189,10 @@ public class UsersController extends BaseController {
                              @RequestParam(value = "tenantId") int tenantId,
                              @RequestParam(value = "phone", required = false) String phone,
                              @RequestParam(value = "state", required = false) int state,
-                             @RequestParam(value = "timeZone", required = false) String timeZone) throws Exception {
-        Map<String, Object> result = usersService.updateUser(loginUser, id, userName, userPassword, email, tenantId, phone, queue, state, timeZone);
+                             @RequestParam(value = "timeZone", required = false) String timeZone,
+                             @RequestParam(value = "workerGroupList", required = false) String workerGroupList,
+                             @RequestParam(value = "alertGroupList", required = false) String alertGroupList) throws Exception {
+        Map<String, Object> result = usersService.updateUser(loginUser, id, userName, userPassword, email, tenantId, phone, queue, state, timeZone,workerGroupList,alertGroupList);
         return returnDataList(result);
     }
 
@@ -526,7 +530,8 @@ public class UsersController extends BaseController {
     public Result<Object> registerUser(@RequestParam(value = "userName") String userName,
                                        @RequestParam(value = "userPassword") String userPassword,
                                        @RequestParam(value = "repeatPassword") String repeatPassword,
-                                       @RequestParam(value = "email") String email) throws Exception {
+                                       @RequestParam(value = "email") String email
+                                       ) throws Exception {
         userName = ParameterUtils.handleEscapes(userName);
         userPassword = ParameterUtils.handleEscapes(userPassword);
         repeatPassword = ParameterUtils.handleEscapes(repeatPassword);

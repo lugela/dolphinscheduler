@@ -44,10 +44,10 @@ public interface UsersService {
      * @throws Exception exception
      */
     Map<String, Object> createUser(User loginUser, String userName, String userPassword, String email,
-                                   int tenantId, String phone, String queue, int state) throws Exception;
+                                   int tenantId, String phone, String queue, int state,String workerGroupList,String alertGroupList) throws Exception;
 
     User createUser(String userName, String userPassword, String email,
-                    int tenantId, String phone, String queue, int state);
+                    int tenantId, String phone, String queue, int state,String workerGroupList,String alertGroupList);
 
     /***
      * create User for ldap login
@@ -130,7 +130,7 @@ public interface UsersService {
      * @throws Exception exception
      */
     Map<String, Object> updateUser(User loginUser, int userId, String userName, String userPassword, String email,
-                                   int tenantId, String phone, String queue, int state, String timeZone) throws IOException;
+                                   int tenantId, String phone, String queue, int state, String timeZone,String workerGroupList,String alertGroupList) throws IOException;
 
     /**
      * delete user

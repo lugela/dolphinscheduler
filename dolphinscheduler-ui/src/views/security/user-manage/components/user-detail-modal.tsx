@@ -125,6 +125,20 @@ export const UserModal = defineComponent({
               />
             </NFormItem>
           )}
+
+          {this.currentRecord?.id && (
+              <NFormItem
+                  label={t('security.user.user_password')}
+              >
+                <NInput
+                    class='input-password'
+                    type='password'
+                    v-model:value={this.formData.userPassword}
+                    placeholder={t('security.user.user_password_tips')}
+                />
+              </NFormItem>
+          )}
+
           {this.IS_ADMIN && (
             <NFormItem label={t('security.user.tenant_code')} path='tenantId'>
               <NSelect
@@ -134,6 +148,38 @@ export const UserModal = defineComponent({
               />
             </NFormItem>
           )}
+
+          {this.IS_ADMIN && (
+              <NFormItem label={t('security.user.worker_groups')} path='workerGroupList'>
+                <NSelect
+                    class='select-worker-groups'
+                    multiple
+                    placeholder={t(
+                        'security.user.worker_groups_tips'
+                    )}
+                    options={this.workerGroupALL}
+                    v-model:value={this.workerGroupList}
+                />
+              </NFormItem>
+          )}
+
+
+          {this.IS_ADMIN && (
+              <NFormItem label={t('security.user.alert_groups')} path='alertGroupList'>
+                <NSelect
+                    class='select-worker-groups'
+                    multiple
+                    placeholder={t(
+                        'security.user.alert_groups_tips'
+                    )}
+                    options={this.alertGroupALL}
+                    v-model:value={this.alertGroupList}
+                />
+              </NFormItem>
+          )}
+
+
+
           {this.IS_ADMIN && (
             <NFormItem label={t('security.user.queue')} path='queue'>
               <NSelect

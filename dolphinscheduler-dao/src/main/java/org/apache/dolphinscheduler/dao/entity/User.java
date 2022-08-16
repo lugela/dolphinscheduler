@@ -67,6 +67,17 @@ public class  User {
      */
     private int tenantId;
 
+
+    /**
+     *  workerGroupList
+     */
+    private String workerGroupList;
+
+    /**
+     *  alertGroupList
+     */
+    private String alertGroupList;
+
     /**
      * user state
      */
@@ -229,6 +240,23 @@ public class  User {
 
     public void setTimeZone(String timeZone) {
         this.timeZone = timeZone;
+    }
+
+
+    public String getWorkerGroupList() {
+        return workerGroupList;
+    }
+
+    public void setWorkerGroupList(String workerGroupList) {
+        this.workerGroupList = workerGroupList;
+    }
+
+    public String getAlertGroupList() {
+        return alertGroupList;
+    }
+
+    public void setAlertGroupList(String alertGroupList) {
+        this.alertGroupList = alertGroupList;
     }
 
     @Override
