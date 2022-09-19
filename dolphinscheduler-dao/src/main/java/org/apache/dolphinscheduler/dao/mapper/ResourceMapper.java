@@ -129,6 +129,9 @@ public interface ResourceMapper extends BaseMapper<Resource> {
      */
     List<Resource> listResourceByIds(@Param("resIds")Integer[] resIds);
 
+
+    List<Resource> listResourceByIsDirectory(@Param("IsDirectory")Integer IsDirectory);
+
     /**
      * update resource
      * @param resourceList  resource list

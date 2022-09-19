@@ -19,6 +19,7 @@ package org.apache.dolphinscheduler.dao.mapper;
 
 import org.apache.dolphinscheduler.dao.entity.DataSource;
 
+import org.apache.dolphinscheduler.dao.entity.Environment;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -78,6 +79,13 @@ public interface DataSourceMapper extends BaseMapper<DataSource> {
      * @return datasource list
      */
     List<DataSource> listAllDataSourceByType(@Param("type") Integer type);
+
+
+    /**
+     * query all environment list
+     * @return environment list
+     */
+    List<DataSource> queryAllDataSourceList();
 
 
     /**

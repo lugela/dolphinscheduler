@@ -19,6 +19,9 @@ package org.apache.dolphinscheduler.api.service;
 
 import static org.powermock.api.mockito.PowerMockito.mock;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.dolphinscheduler.api.enums.Status;
 import org.apache.dolphinscheduler.api.service.impl.ProcessDefinitionServiceImpl;
 import org.apache.dolphinscheduler.api.service.impl.ProjectServiceImpl;
@@ -787,4 +790,49 @@ public class ProcessDefinitionServiceTest {
             result.put(Constants.MSG, status.getMsg());
         }
     }
+
+
+    @Test
+    public void test(){
+        HashMap x = null;
+        x.toString();
+    }
+
+
+    @Test
+    public void testResource(){
+       String resources = "{\n" +
+               "    \"customConfig\": 1,\n" +
+               "    \"localParams\": [],\n" +
+               "    \"resourceList\": [],\n" +
+               "    \"xms\": 1,\n" +
+               "    \"xmx\": 3\n" +
+               "}";
+        Map<Integer,String> resourceMap =  new HashMap<>();
+        resourceMap.put(1,"/ztrisk.keytab");
+        resourceMap.put(2,"/hbase-site.xml");
+        resourceMap.put(3,"/hdfs-site.xml");
+        resourceMap.put(4,"/krb5.conf");
+        resourceMap.put(5,"/szb.keytab");
+        ObjectNode jsonNodes = JSONUtils.parseObject(resources);
+        //List<JsonNode> resourceList1 = jsonNodes.findValues("resourceList");
+        String resourceList = jsonNodes.get("resourceList").toString();
+        ArrayNode resourceList1 = JSONUtils.parseArray(resourceList);
+        if (null != resourceList1  && resourceList1.size()>0){
+            List<Map<String,Object>> resourceListNew = new ArrayList<>();
+            for (JsonNode resource: resourceList1){
+                int id = resource.get("id").asInt();
+                Map<String,Object> resourceMapNew= new HashMap<>();
+                resourceMapNew.put("id",id);
+                if (resourceMap.containsKey(id)){
+                    String resourceName = resourceMap.get(id);
+                    resourceMapNew.put("fullname",resourceName);
+                }
+                resourceListNew.add(resourceMapNew);
+            }
+        }
+
+        System.out.println();
+    }
+
 }
