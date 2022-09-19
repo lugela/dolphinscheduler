@@ -407,7 +407,7 @@ public class PythonGateway {
         if (Objects.isNull(user)) {
             Map<String, Object> tenantResult = tenantService.queryByTenantCode(tenantCode);
             Tenant tenant = (Tenant) tenantResult.get(Constants.DATA_LIST);
-            usersService.createUser(userName, userPassword, email, tenant.getId(), phone, queue, state);
+            usersService.createUser(userName, userPassword, email, tenant.getId(), phone, queue, state,"","");
         }
     }
 

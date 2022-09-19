@@ -141,6 +141,12 @@ public class TaskDefinition {
     private long environmentCode;
 
     /**
+     * environment name
+     */
+    @TableField(exist = false)
+    private String environmentName;
+
+    /**
      * fail retry times
      */
     private int failRetryTimes;
@@ -325,6 +331,9 @@ public class TaskDefinition {
         return taskParamMap;
     }
 
+
+
+
     public int getTimeout() {
         return timeout;
     }
@@ -455,6 +464,14 @@ public class TaskDefinition {
 
     public void setEnvironmentCode(long environmentCode) {
         this.environmentCode = environmentCode;
+    }
+
+    public String getEnvironmentName() {
+        return environmentName;
+    }
+
+    public void setEnvironmentName(String environmentName) {
+        this.environmentName = environmentName;
     }
 
     @Override

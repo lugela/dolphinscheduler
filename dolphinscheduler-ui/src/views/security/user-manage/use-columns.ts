@@ -70,7 +70,21 @@ export function useColumns(onCallback: Function) {
         key: 'tenantCode',
         ...COLUMN_WIDTH_CONFIG['name']
       },
+
       {
+        title: t('security.user.worker_groups'),
+        key: 'workerGroupList',
+        ...COLUMN_WIDTH_CONFIG['name']
+      },
+
+      {
+        title: t('security.user.alert_groups'),
+        key: 'alertGroupList',
+        ...COLUMN_WIDTH_CONFIG['name']
+      },
+
+      {
+
         title: t('security.user.queue'),
         key: 'queue',
         width: 120

@@ -145,7 +145,9 @@ public class UsersServiceImpl extends BaseServiceImpl implements UsersService {
                                           int tenantId,
                                           String phone,
                                           String queue,
-                                          int state) throws Exception {
+                                          int state,
+                                          String workerGroupList,
+                                          String alertGroupList) throws Exception {
         Map<String, Object> result = new HashMap<>();
 
         //check all user params
@@ -165,7 +167,7 @@ public class UsersServiceImpl extends BaseServiceImpl implements UsersService {
             return result;
         }
 
-        User user = createUser(userName, userPassword, email, tenantId, phone, queue, state);
+        User user = createUser(userName, userPassword, email, tenantId, phone, queue, state,workerGroupList, alertGroupList);
 
         Tenant tenant = tenantMapper.queryById(tenantId);
         // resource upload startup
@@ -188,7 +190,9 @@ public class UsersServiceImpl extends BaseServiceImpl implements UsersService {
                            int tenantId,
                            String phone,
                            String queue,
-                           int state) {
+                           int state,
+                           String workerGroupList,
+                           String alertGroupList) {
         User user = new User();
         Date now = new Date();
 
@@ -198,6 +202,8 @@ public class UsersServiceImpl extends BaseServiceImpl implements UsersService {
         user.setTenantId(tenantId);
         user.setPhone(phone);
         user.setState(state);
+        user.setWorkerGroupList(workerGroupList);
+        user.setAlertGroupList(alertGroupList);
         // create general users, administrator users are currently built-in
         user.setUserType(UserType.GENERAL_USER);
         user.setCreateTime(now);
@@ -355,6 +361,7 @@ public class UsersServiceImpl extends BaseServiceImpl implements UsersService {
      * @param timeZone     timeZone
      * @return update result code
      * @throws Exception exception
+     *
      */
     @Override
     public Map<String, Object> updateUser(User loginUser, int userId,
@@ -365,7 +372,9 @@ public class UsersServiceImpl extends BaseServiceImpl implements UsersService {
                                           String phone,
                                           String queue,
                                           int state,
-                                          String timeZone) throws IOException {
+                                          String timeZone,
+                                          String workerGroupList,
+                                          String alertGroupList) throws IOException {
         Map<String, Object> result = new HashMap<>();
         result.put(Constants.STATUS, false);
 
@@ -428,6 +437,8 @@ public class UsersServiceImpl extends BaseServiceImpl implements UsersService {
 
         user.setPhone(phone);
         user.setQueue(queue);
+        user.setWorkerGroupList(workerGroupList);
+        user.setAlertGroupList(alertGroupList);
         user.setState(state);
         Date now = new Date();
         user.setUpdateTime(now);
@@ -1159,7 +1170,7 @@ public class UsersServiceImpl extends BaseServiceImpl implements UsersService {
             putMsg(result, Status.REQUEST_PARAMS_NOT_VALID_ERROR, "two passwords are not same");
             return result;
         }
-        User user = createUser(userName, userPassword, email, 1, "", "", Flag.NO.ordinal());
+        User user = createUser(userName, userPassword, email, 1, "", "", Flag.NO.ordinal(),"","");
         putMsg(result, Status.SUCCESS);
         result.put(Constants.DATA_LIST, user);
         return result;

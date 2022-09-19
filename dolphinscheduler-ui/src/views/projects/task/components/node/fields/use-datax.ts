@@ -16,6 +16,7 @@
  */
 import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import {useResources} from '.'
 import type { IJsonItem } from '../types'
 import { find } from 'lodash'
 import { TypeReq } from '@/service/modules/data-source/types'
@@ -203,6 +204,7 @@ export function useDataX(model: { [field: string]: any }): IJsonItem[] {
   const otherStatementSpan = ref(22)
   const jobSpeedSpan = ref(12)
   const customParameterSpan = ref(0)
+  const useResourcesSpan = ref(0)
 
   const initConstants = () => {
     if (model.customConfig) {
@@ -213,6 +215,7 @@ export function useDataX(model: { [field: string]: any }): IJsonItem[] {
       otherStatementSpan.value = 0
       jobSpeedSpan.value = 0
       customParameterSpan.value = 24
+      useResourcesSpan.value = 24
     } else {
       sqlEditorSpan.value = 24
       jsonEditorSpan.value = 0
@@ -221,6 +224,8 @@ export function useDataX(model: { [field: string]: any }): IJsonItem[] {
       otherStatementSpan.value = 22
       jobSpeedSpan.value = 12
       customParameterSpan.value = 0
+      useResourcesSpan.value = 0
+
     }
   }
 
@@ -305,6 +310,7 @@ export function useDataX(model: { [field: string]: any }): IJsonItem[] {
         message: t('project.node.sql_empty_tips')
       }
     },
+    useResources(useResourcesSpan),
     {
       type: 'select',
       field: 'dtType',

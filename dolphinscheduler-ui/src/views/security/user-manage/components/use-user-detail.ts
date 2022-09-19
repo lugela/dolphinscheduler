@@ -22,6 +22,8 @@ import { queryList } from '@/service/modules/queues'
 import { verifyUserName, createUser, updateUser } from '@/service/modules/users'
 import { useUserStore } from '@/store/user/user'
 import type { IRecord, UserReq, UserInfoRes } from '../types'
+import { queryAllWorkerGroups } from '@/service/modules/worker-groups'
+import { listAlertGroupById } from '@/service/modules/alert-group'
 
 export function useUserDetail() {
   const { t } = useI18n()
@@ -33,6 +35,8 @@ export function useUserDetail() {
     userName: '',
     userPassword: '',
     tenantId: null,
+    workerGroupList: '',
+    alertGroupList:'',
     email: '',
     queue: '',
     phone: '',
@@ -47,7 +51,11 @@ export function useUserDetail() {
     saving: false,
     loading: false,
     queues: [] as { label: string; value: string }[],
-    tenants: [] as { label: string; value: number }[]
+    tenants: [] as { label: string; value: number }[],
+    workerGroupALL: [] as { label: string; value: string }[],
+    workerGroupList: [] as string[],
+    alertGroupALL: [] as { label: string; value: string }[],
+    alertGroupList: [] as string[]
   })
 
   const formRules = {
@@ -83,6 +91,26 @@ export function useUserDetail() {
         }
       }
     },
+    workerGroupList: {
+      required: true,
+      trigger: ['input', 'blur'],
+      validator() {
+        if (IS_ADMIN && state.workerGroupList.length<1) {
+          return new Error(t('security.user.worker_groups_tips'))
+        }
+      }
+    },
+
+    alertGroupList: {
+      required: true,
+      trigger: ['input', 'blur'],
+      validator() {
+        if (IS_ADMIN && state.alertGroupList.length<1) {
+          return new Error(t('security.user.alert_groups_tips'))
+        }
+      }
+    },
+
     email: {
       trigger: ['input', 'blur'],
       required: true,
@@ -133,23 +161,56 @@ export function useUserDetail() {
       state.formData.tenantId = state.tenants[0].value
     }
   }
-  const onReset = () => {
+
+
+  const getWrokerGroupAll = async () => {
+    queryAllWorkerGroups().then((res: any) => {
+      state.workerGroupALL = res.map((item: any) => {
+        return {
+          label: item,
+          value: item
+        }
+      })
+    })
+  }
+
+
+  const getAlertGroupAll = () => {
+    listAlertGroupById().then((res: any) => {
+      state.alertGroupALL = res.map((item: any) => ({
+        label: item.groupName,
+        value: item.groupName
+      }))
+    })
+
+  }
+
+    const onReset = () => {
+    state.workerGroupList =[]
+    state.alertGroupList = []
     state.formData = { ...initialValues }
   }
   const onSave = async (id?: number): Promise<boolean> => {
     try {
       await state.formRef.validate()
-      if (state.saving) return false
+      if (state.saving){
+        return false
+      }
       state.saving = true
       if (PREV_NAME !== state.formData.userName) {
         await verifyUserName({ userName: state.formData.userName })
       }
+      state.formData.workerGroupList = state.workerGroupList.join(",")
+      state.formData.alertGroupList = state.alertGroupList.join(",")
 
       id
         ? await updateUser({ id, ...state.formData })
         : await createUser(state.formData)
 
       state.saving = false
+      //去除缓存
+      state.workerGroupList = []
+      state.alertGroupList = []
       return true
     } catch (err) {
       state.saving = false
@@ -169,12 +230,23 @@ export function useUserDetail() {
       userPassword: ''
     } as UserReq
     PREV_NAME = state.formData.userName
+    state.workerGroupList = []
+    state.alertGroupList = []
+    if (null != record.workerGroupList && record.workerGroupList !=''){
+      state.workerGroupList = record.workerGroupList.split(",")
+    }
+    if (null != record.alertGroupList && record.alertGroupList !=''){
+      state.alertGroupList = record.alertGroupList.split(",")
+    }
+
   }
 
   onMounted(async () => {
     if (IS_ADMIN) {
       getQueues()
       getTenants()
+      getWrokerGroupAll()
+      getAlertGroupAll()
     }
   })
 
