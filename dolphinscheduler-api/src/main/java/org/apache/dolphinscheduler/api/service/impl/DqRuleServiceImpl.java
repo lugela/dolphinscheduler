@@ -127,10 +127,15 @@ public class DqRuleServiceImpl extends BaseServiceImpl implements DqRuleService 
     }
 
     @Override
-    public Map<String, Object> getDatasourceOptionsById(int datasourceId) {
+    public Map<String, Object> getDatasourceOptionsById(User loginUser, int datasourceId) {
         Map<String, Object> result = new HashMap<>();
+        List<DataSource> dataSourceList;
 
-        List<DataSource> dataSourceList = dataSourceMapper.listAllDataSourceByType(datasourceId);
+        if (isAdmin(loginUser)) {
+            dataSourceList = dataSourceMapper.listAllDataSourceByType(datasourceId);
+        } else {
+            dataSourceList = dataSourceMapper.queryDataSourceByType(loginUser.getId(), datasourceId);
+        }
         List<ParamsOptions> options = null;
         if (CollectionUtils.isNotEmpty(dataSourceList)) {
             options = new ArrayList<>();
