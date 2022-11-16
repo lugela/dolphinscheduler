@@ -31,8 +31,12 @@ import org.apache.dolphinscheduler.api.service.AlertGroupService;
 import org.apache.dolphinscheduler.api.utils.Result;
 import org.apache.dolphinscheduler.common.Constants;
 import org.apache.dolphinscheduler.common.utils.ParameterUtils;
+import org.apache.dolphinscheduler.dao.entity.AlertGroup;
 import org.apache.dolphinscheduler.dao.entity.User;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -110,6 +114,28 @@ public class AlertGroupController extends BaseController {
     public Result list(@ApiIgnore @RequestAttribute(value = Constants.SESSION_USER) User loginUser) {
 
         Map<String, Object> result = alertGroupService.queryAlertgroup();
+        if (1 == loginUser.getUserType().getCode()){
+            //普通用户
+            String alertGroupList = loginUser.getAlertGroupList();
+            if (null!= alertGroupList && !alertGroupList.isEmpty()){
+                List<String> userWorkerGroups = Arrays.asList(alertGroupList.split(","));
+                List<AlertGroup> alertGroups=new ArrayList<>();
+                List<AlertGroup> alertGroupAll = (List<AlertGroup>)result.get("data");
+                if (null != alertGroupAll && !alertGroupAll.isEmpty()){
+                    for (AlertGroup alertGroup:alertGroupAll){
+                        if (userWorkerGroups.contains( alertGroup.getGroupName())){
+                            alertGroups.add(alertGroup);
+                        }
+
+                    }
+                }
+                result.put("data",alertGroups);
+            }else {
+                result.put("data",new ArrayList<AlertGroup>());
+            }
+
+        }
+
         return returnDataList(result);
     }
 

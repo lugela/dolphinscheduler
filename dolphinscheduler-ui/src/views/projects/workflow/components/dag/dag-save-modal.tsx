@@ -76,12 +76,13 @@ export default defineComponent({
     const tenants = ref<Tenant[]>([])
     const tenantsDropdown = computed(() => {
       if (tenants.value) {
+        formValue.value.tenantCode= tenants.value[0].tenantCode
         return tenants.value
           .map((t) => ({
             label: t.tenantCode,
             value: t.tenantCode
           }))
-          .concat({ label: 'default', value: 'default' })
+          //.concat({ label: 'default', value: 'default' })
       }
       return []
     })
@@ -94,7 +95,7 @@ export default defineComponent({
     const formValue = ref<SaveForm>({
       name: '',
       description: '',
-      tenantCode: 'default',
+      tenantCode: '',
       executionType: 'PARALLEL',
       timeoutFlag: false,
       timeout: 0,
@@ -168,7 +169,7 @@ export default defineComponent({
       if (process) {
         formValue.value.name = process.name
         formValue.value.description = process.description
-        formValue.value.tenantCode = process.tenantCode || 'default'
+        formValue.value.tenantCode = process.tenantCode //|| 'default'
         formValue.value.executionType = process.executionType || 'PARALLEL'
         if (process.timeout && process.timeout > 0) {
           formValue.value.timeoutFlag = true

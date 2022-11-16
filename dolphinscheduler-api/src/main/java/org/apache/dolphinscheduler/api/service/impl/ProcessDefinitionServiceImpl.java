@@ -24,6 +24,7 @@ import static org.apache.dolphinscheduler.common.Constants.IMPORT_SUFFIX;
 import static org.apache.dolphinscheduler.plugin.task.api.TaskConstants.COMPLEX_TASK_TYPES;
 import static org.apache.dolphinscheduler.plugin.task.api.TaskConstants.TASK_TYPE_SQL;
 
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.JSONSchemaPropsOrArraySerDe;
 import org.apache.dolphinscheduler.api.dto.DagDataSchedule;
 import org.apache.dolphinscheduler.api.dto.ScheduleParam;
 import org.apache.dolphinscheduler.api.dto.treeview.Instance;
@@ -46,7 +47,8 @@ import org.apache.dolphinscheduler.common.enums.Flag;
 import org.apache.dolphinscheduler.common.enums.Priority;
 import org.apache.dolphinscheduler.common.enums.ProcessExecutionTypeEnum;
 import org.apache.dolphinscheduler.common.enums.ReleaseState;
-import org.apache.dolphinscheduler.dao.entity.DependentSimplifyDefinition;
+import org.apache.dolphinscheduler.dao.entity.*;
+import org.apache.dolphinscheduler.dao.mapper.*;
 import org.apache.dolphinscheduler.plugin.task.api.enums.TaskTimeoutStrategy;
 import org.apache.dolphinscheduler.common.enums.TimeoutFlag;
 import org.apache.dolphinscheduler.common.enums.UserType;
@@ -125,6 +127,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -201,6 +204,11 @@ public class ProcessDefinitionServiceImpl extends BaseServiceImpl implements Pro
     @Autowired
     private WorkFlowLineageService workFlowLineageService;
 
+    @Autowired
+    private EnvironmentMapper environmentMapper;
+
+    @Autowired
+    private ResourceMapper resourceMapper;
     /**
      * create process definition
      *
@@ -921,6 +929,28 @@ public class ProcessDefinitionServiceImpl extends BaseServiceImpl implements Pro
         if (org.apache.commons.lang.StringUtils.isEmpty(codes)) {
             return;
         }
+
+        Map<Long,String> environmenMap =  new HashMap<>();
+        Map<Integer,String> dataSourceMap =  new HashMap<>();
+        Map<Integer,String> resourceMap =  new HashMap<>();
+
+        //query all Environment
+        List<Environment> environmentList = environmentMapper.queryAllEnvironmentList();
+        if (CollectionUtils.isNotEmpty(environmentList)) {
+            environmentList.stream().forEach(env -> environmenMap.put(env.getCode(),env.getName()));
+        }
+        //datasource
+        List<DataSource> dataSourceList = dataSourceMapper.queryAllDataSourceList();
+        if (CollectionUtils.isNotEmpty(dataSourceList)) {
+            dataSourceList.stream().forEach(dataSource -> dataSourceMap.put(dataSource.getId(),dataSource.getName()));
+        }
+        //resource
+        List<Resource> resourceList = resourceMapper.listResourceByIsDirectory(0);
+        if (CollectionUtils.isNotEmpty(resourceList)) {
+            resourceList.stream().forEach(resource -> resourceMap.put(resource.getId(),resource.getFullName()));
+        }
+
+
         Project project = projectMapper.queryByCode(projectCode);
         //check user access for project
         Map<String, Object> result = projectService.checkProjectAndAuth(loginUser, project, projectCode);
@@ -935,7 +965,85 @@ public class ProcessDefinitionServiceImpl extends BaseServiceImpl implements Pro
         // check processDefinition exist in project
         List<ProcessDefinition> processDefinitionListInProject = processDefinitionList.stream().filter(o -> projectCode == o.getProjectCode()).collect(Collectors.toList());
         List<DagDataSchedule> dagDataSchedules = processDefinitionListInProject.stream().map(this::exportProcessDagData).collect(Collectors.toList());
+        //加入环境名称
         if (CollectionUtils.isNotEmpty(dagDataSchedules)) {
+            for (DagDataSchedule  dagDataSchedule: dagDataSchedules){
+                List<TaskDefinition> taskDefinitionList = dagDataSchedule.getTaskDefinitionList();
+                if (CollectionUtils.isNotEmpty(taskDefinitionList)){
+                   for (TaskDefinition taskDefinition : taskDefinitionList){
+                       //加入环境变量
+                       if (environmenMap.containsKey(taskDefinition.getEnvironmentCode())){
+                           taskDefinition.setEnvironmentName(environmenMap.get(taskDefinition.getEnvironmentCode()));
+                       }
+
+                       String taskParams = taskDefinition.getTaskParams();
+
+                       //Map<String, String> taskParamMap = JSONUtils.toMap(taskParams);
+                       ObjectNode jsonNodes = JSONUtils.parseObject(taskParams);
+                       String taskType = taskDefinition.getTaskType();
+                       if ("SQL".equals(taskType) || "PROCEDURE".equals(taskType)){
+                           String datasource = jsonNodes.get("datasource").toString();
+                           if (StringUtils.isNotEmpty(datasource)){
+                               String dataSourceName = dataSourceMap.get(Integer.valueOf(datasource));
+                               jsonNodes.put("datasourceName",dataSourceName);
+                               taskDefinition.setTaskParams(jsonNodes.toString());
+                           }
+                       }
+                       //资源文件进行匹配
+                       JsonNode resourceJ = jsonNodes.get("resourceList");
+                       if (null != resourceJ ){
+                           String resourceString = resourceJ.toString();
+                           ArrayNode resourceList1 = JSONUtils.parseArray(resourceString);
+                           if (null != resourceList1  && resourceList1.size()>0){
+                               List<Map<String,Object>> resourceListNew = new ArrayList<>();
+                               for (JsonNode resource: resourceList1){
+                                   int id = resource.get("id").asInt();
+                                   Map<String,Object> resourceMapNew= new HashMap<>();
+                                   resourceMapNew.put("id",id);
+                                   if (resourceMap.containsKey(id)){
+                                       String resourceName = resourceMap.get(id);
+                                       resourceMapNew.put("fullname",resourceName);
+                                   }
+                                   resourceListNew.add(resourceMapNew);
+                               }
+                               //覆盖
+                               jsonNodes.replace("resourceList",JSONUtils.toJsonNode(resourceListNew));
+                           }
+
+                       }
+
+                       JsonNode mainJarJ = jsonNodes.get("mainJar");
+                       if(null != mainJarJ){
+                           Integer id = Integer.valueOf(mainJarJ.get("id").toString());
+                           Map<String, Object> mainJarMap = new HashMap<>();
+                           mainJarMap.put("id",id);
+                           if (resourceMap.containsKey(id)){
+                               String resourceName = resourceMap.get(id);
+                               mainJarMap.put("fullname",resourceName);
+                           }
+                           jsonNodes.replace("mainJar",JSONUtils.toJsonNode(mainJarMap));
+                       }
+
+                       JsonNode ruleInputParameterJ = jsonNodes.get("ruleInputParameter");
+                       if (null != ruleInputParameterJ){
+                           ObjectNode ruleInputParameterO = JSONUtils.parseObject(ruleInputParameterJ.toString());
+                           JsonNode src_datasource_id_J = ruleInputParameterO.get("src_datasource_id");
+                           if (null != src_datasource_id_J && dataSourceMap.containsKey(src_datasource_id_J.asInt())){
+                               String src_datasource_name_J = dataSourceMap.get(src_datasource_id_J.asInt());
+                               ruleInputParameterO.put("src_datasource_name",src_datasource_name_J);
+                               jsonNodes.replace("ruleInputParameter",ruleInputParameterO);
+                           }
+
+
+                       }
+
+
+                       taskDefinition.setTaskParams(jsonNodes.toString());
+
+
+                   }
+                }
+            }
             downloadProcessDefinitionFile(response, dagDataSchedules);
         }
     }
@@ -1224,6 +1332,28 @@ public class ProcessDefinitionServiceImpl extends BaseServiceImpl implements Pro
         if (!checkImportanceParams(dagDataSchedule, result)) {
             return false;
         }
+
+        Map<String,Long> environmentMap =  new HashMap<>();
+        Map<String,Integer> dataSourceMap =  new HashMap<>();
+        Map<String,Integer> resourceMap =  new HashMap<>();
+
+        //query all Environment
+        List<Environment> environmentList = environmentMapper.queryAllEnvironmentList();
+        if (CollectionUtils.isNotEmpty(environmentList)) {
+            environmentList.stream().forEach(env -> environmentMap.put(env.getName(),env.getCode()));
+        }
+        //datasource
+        List<DataSource> dataSourceList = dataSourceMapper.queryAllDataSourceList();
+        if (CollectionUtils.isNotEmpty(dataSourceList)) {
+            dataSourceList.stream().forEach(dataSource -> dataSourceMap.put(dataSource.getName() , dataSource.getId()));
+        }
+        //resource
+        List<Resource> resourceList = resourceMapper.listResourceByIsDirectory(0);
+        if (CollectionUtils.isNotEmpty(resourceList)) {
+            resourceList.stream().forEach(resource -> resourceMap.put(resource.getFullName() , resource.getId()));
+        }
+
+
         ProcessDefinition processDefinition = dagDataSchedule.getProcessDefinition();
 
         // generate import processDefinitionName
@@ -1254,7 +1384,7 @@ public class ProcessDefinitionServiceImpl extends BaseServiceImpl implements Pro
         List<TaskDefinitionLog> taskDefinitionLogList = new ArrayList<>();
         for (TaskDefinition taskDefinition : taskDefinitionList) {
             TaskDefinitionLog taskDefinitionLog = new TaskDefinitionLog(taskDefinition);
-            taskDefinitionLog.setName(taskDefinitionLog.getName() + "_import_" + DateUtils.getCurrentTimeStamp());
+            taskDefinitionLog.setName(taskDefinitionLog.getName());
             taskDefinitionLog.setProjectCode(projectCode);
             taskDefinitionLog.setUserId(loginUser.getId());
             taskDefinitionLog.setVersion(Constants.VERSION_FIRST);
@@ -1262,6 +1392,73 @@ public class ProcessDefinitionServiceImpl extends BaseServiceImpl implements Pro
             taskDefinitionLog.setUpdateTime(now);
             taskDefinitionLog.setOperator(loginUser.getId());
             taskDefinitionLog.setOperateTime(now);
+            String environmentName = taskDefinition.getEnvironmentName();
+            //环境code 替换成当前环境
+            if (environmentMap.containsKey(environmentName)){
+                taskDefinitionLog.setEnvironmentCode(environmentMap.get(environmentName));
+            }
+            //对数据源替换、资源文件替换
+            String taskParams = taskDefinitionLog.getTaskParams();
+            if (StringUtils.isNotEmpty(taskParams)){
+                ObjectNode jsonNodes = JSONUtils.parseObject(taskParams);
+                String taskType = taskDefinitionLog.getTaskType();
+                //数据源匹配
+                if ("SQL".equals(taskType) || "PROCEDURE".equals(taskType)){
+                    JsonNode datasourceJ = jsonNodes.get("datasourceName");
+                    if (null != datasourceJ && dataSourceMap.containsKey(datasourceJ.asText())){
+                        Integer dataSourceId = dataSourceMap.get(datasourceJ.asText());
+                        jsonNodes.put("datasource",dataSourceId);
+                        jsonNodes.remove("datasourceName");
+                    }
+                }
+                //资源匹配
+                JsonNode resourcesJ = jsonNodes.get("resourceList");
+                if (null != resourcesJ && !resourcesJ.isEmpty()){
+                    String resourcesString = resourcesJ.toString();
+                    ArrayNode resourceList1 = JSONUtils.parseArray(resourcesString);
+                    List<Map<String,Integer>>  resourceMapList = new ArrayList<>();
+                    List<String> resourceIdList = new ArrayList<>();
+                    if (null != resourceList1  && resourceList1.size()>0){
+                        for (JsonNode resourceJ: resourceList1){
+                            JsonNode fullnameJ = resourceJ.get("fullname");
+                            if(null != fullnameJ && resourceMap.containsKey(fullnameJ.asText())){
+                                HashMap<String, Integer> resourceMapNew = new HashMap<>();
+                                Integer resourceId = resourceMap.get(fullnameJ.asText());
+                                resourceMapNew.put("id",resourceId);
+                                resourceMapList.add(resourceMapNew);
+                                if(!resourceIdList.contains(resourceId)){
+                                    resourceIdList.add(String.valueOf(resourceId));
+                                }
+                            }
+                        }
+                    }
+                    if (!resourceMapList.isEmpty()){
+                        jsonNodes.replace("resourceList",JSONUtils.toJsonNode(resourceMapList));
+                    }
+                    if(!resourceIdList.isEmpty()){
+                        taskDefinitionLog.setResourceIds(resourceIdList.stream().collect(Collectors.joining(",")));
+                    }
+
+                }
+
+                //mainJar 匹配
+                JsonNode mainJarJ = jsonNodes.get("mainJar");
+                if (null != mainJarJ){
+                    Map<String, Integer> mainJarMap = new HashMap<>();
+                    JsonNode fullnameJ = mainJarJ.get("fullname");
+                    if (null != fullnameJ && resourceMap.containsKey(fullnameJ.asText())){
+                        Integer resourceId = resourceMap.get(fullnameJ.asText());
+                        mainJarMap.put("id",resourceId);
+                        jsonNodes.replace("mainJar",JSONUtils.toJsonNode(mainJarMap));
+                    }
+                }
+                //覆盖参数
+                taskDefinitionLog.setTaskParams(JSONUtils.toJsonString(jsonNodes));
+
+
+            }
+
+
             try {
                 long code = CodeGenerateUtils.getInstance().genCode();
                 taskCodeMap.put(taskDefinitionLog.getCode(), code);
@@ -1273,6 +1470,130 @@ public class ProcessDefinitionServiceImpl extends BaseServiceImpl implements Pro
             }
             taskDefinitionLogList.add(taskDefinitionLog);
         }
+        //遍历task 类型，遇到相应的swicth 节点 转发的taskcode 替换
+        taskDefinitionLogList.stream().forEach(taskDefinition -> {
+            String taskType = taskDefinition.getTaskType();
+            String taskParams = taskDefinition.getTaskParams();
+            if (StringUtils.isNotEmpty(taskParams)) {
+                ObjectNode jsonNodes = JSONUtils.parseObject(taskParams);
+                if ("SWITCH".equals(taskType) && jsonNodes.has("switchResult")) {
+                    ObjectNode switchResultJ = JSONUtils.parseObject(jsonNodes.get("switchResult").toString());
+                    if (switchResultJ != null && !switchResultJ.isNull() && !switchResultJ.isEmpty()) {
+                        JsonNode dependTaskListJ = switchResultJ.get("dependTaskList");
+                        if (dependTaskListJ != null && !dependTaskListJ.isNull() && !dependTaskListJ.isEmpty()) {
+                            List<Map> dependTaskMapList = JSONUtils.toList(dependTaskListJ.toString(), Map.class);
+                            for (Map dependTaskMap : dependTaskMapList) {
+                                if (dependTaskMap.containsKey("nextNode") && null != dependTaskMap.get("nextNode") && StringUtils.isNotEmpty(dependTaskMap.get("nextNode").toString())) {
+                                    Long dependNextNode = (Long) dependTaskMap.get("nextNode");
+                                    if (taskCodeMap.containsKey(dependNextNode)) {
+                                        Long nextCodeLong = taskCodeMap.get(dependNextNode);
+                                        dependTaskMap.put("nextNode", nextCodeLong);
+                                    }
+                                }
+                            }
+                            switchResultJ.replace("dependTaskList", JSONUtils.toJsonNode(dependTaskMapList));
+
+                        }
+                        JsonNode nextNodeJ = switchResultJ.get("nextNode");
+                        if (null != nextNodeJ) {
+                            if (taskCodeMap.containsKey(nextNodeJ.asLong())) {
+                                Long nextCodeLong = taskCodeMap.get(nextNodeJ.asLong());
+                                switchResultJ.put("nextNode", nextCodeLong);
+                            }
+                        }
+                    }
+
+                    jsonNodes.replace("switchResult", switchResultJ);
+                    taskDefinition.setTaskParams(jsonNodes.toString());
+
+                }
+
+                if ("CONDITIONS".equals(taskType)) {
+                    if (jsonNodes.has("conditionResult")) {
+                        ObjectNode conditionResultJ = jsonNodes.with("conditionResult");
+                        if (conditionResultJ != null && !conditionResultJ.isNull() && !conditionResultJ.isEmpty()) {
+                            JsonNode failedNodeJ = conditionResultJ.get("failedNode");
+                            if (null != failedNodeJ && !failedNodeJ.isNull() && !failedNodeJ.isEmpty()) {
+                                List<Long> failedNodes = JSONUtils.toList(failedNodeJ.toString(), Long.class);
+                                List<Long> failedNodeList = new ArrayList<>();
+                                failedNodes.stream().forEach(failedNode -> {
+                                    if (taskCodeMap.containsKey(failedNode)) {
+                                        Long failedNodeNew = taskCodeMap.get(failedNode);
+                                        failedNodeList.add(failedNodeNew);
+                                    }
+                                });
+                                if (!failedNodeList.isEmpty()) {
+                                    conditionResultJ.replace("failedNode", JSONUtils.toJsonNode(failedNodeList));
+                                }
+                            }
+
+                            JsonNode successNodeJ = conditionResultJ.get("successNode");
+                            if (null != successNodeJ && !successNodeJ.isNull() && !successNodeJ.isEmpty()) {
+                                List<Long> successNodes = JSONUtils.toList(successNodeJ.toString(), Long.class);
+                                List<Long> successNodeList = new ArrayList<>();
+                                successNodes.stream().forEach(successNode -> {
+                                    if (taskCodeMap.containsKey(successNode)) {
+                                        Long successNodeNew = taskCodeMap.get(successNode);
+                                        successNodeList.add(successNodeNew);
+                                    }
+                                });
+                                if (!successNodeList.isEmpty()) {
+                                    conditionResultJ.replace("successNode", JSONUtils.toJsonNode(successNodeList));
+                                }
+                            }
+                        }
+
+                    }
+
+                    if (jsonNodes.has("dependence")) {
+                        ObjectNode dependenceJ = jsonNodes.with("dependence");
+                        ArrayNode dependTaskList = dependenceJ.withArray("dependTaskList");
+                        if (null != dependTaskList && !dependTaskList.isEmpty()) {
+                            List<ObjectNode> dependTaskListNew = new ArrayList<>();
+                            for (JsonNode dependTask : dependTaskList) {
+                                ObjectNode dependTaskO = JSONUtils.parseObject(JSONUtils.toJsonString(dependTask));
+                                if (dependTaskO.has("dependItemList")) {
+                                    JsonNode dependItemList = dependTaskO.get("dependItemList");
+                                    if (null != dependItemList && !dependItemList.isNull() && !dependItemList.isEmpty()) {
+                                        List<Map> dependItemMapList = JSONUtils.toList(dependItemList.toString(), Map.class);
+                                        List<Map<String,Object>> dependItemMapListNew = new ArrayList<>();
+                                        if (dependItemMapList != null && !dependItemMapList.isEmpty()) {
+                                            dependItemMapList.stream().forEach(dependItemMap -> {
+                                                Long depTaskCode = (Long) dependItemMap.get("depTaskCode");
+                                                if (taskCodeMap.containsKey(depTaskCode)) {
+                                                    dependItemMap.put("depTaskCode", taskCodeMap.get(depTaskCode));
+                                                    dependItemMapListNew.add(dependItemMap);
+                                                }
+                                            });
+                                        }
+                                        if (!dependItemMapListNew.isEmpty()){
+                                            dependTaskO.replace("dependItemList", JSONUtils.toJsonNode(dependItemMapListNew));
+                                            dependTaskListNew.add(dependTaskO);
+                                        }
+
+                                    }
+
+
+                                }
+                            }
+                            if (!dependTaskListNew.isEmpty()) {
+                                dependenceJ.replace("dependTaskList", JSONUtils.toJsonNode(dependTaskListNew));
+                                jsonNodes.replace("dependence", dependenceJ);
+                            }
+
+                        }
+
+                    }
+
+                }
+
+                taskDefinition.setTaskParams(jsonNodes.toString());
+            }
+
+        });
+
+
+
         int insert = taskDefinitionMapper.batchInsert(taskDefinitionLogList);
         int logInsert = taskDefinitionLogMapper.batchInsert(taskDefinitionLogList);
         if ((logInsert & insert) == 0) {

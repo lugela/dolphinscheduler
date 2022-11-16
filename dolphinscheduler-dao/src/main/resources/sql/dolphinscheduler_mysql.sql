@@ -932,6 +932,9 @@ CREATE TABLE `t_ds_user` (
   UNIQUE KEY `user_name_unique` (`user_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
+ALTER TABLE t_ds_user ADD worker_group_list varchar(200);
+ALTER TABLE t_ds_user ADD alert_group_list varchar(200);
+
 -- ----------------------------
 -- Records of t_ds_user
 -- ----------------------------

@@ -30,6 +30,8 @@ interface AlertGroupIdReq {
 interface UserReq {
   email: string
   tenantId: number | null
+  workerGroupList?: string
+  alertGroupList?: string
   userName: string
   userPassword: string
   phone?: string

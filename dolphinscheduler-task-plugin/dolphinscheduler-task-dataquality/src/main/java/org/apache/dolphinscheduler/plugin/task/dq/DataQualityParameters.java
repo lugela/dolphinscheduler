@@ -49,6 +49,20 @@ public class DataQualityParameters extends AbstractParameters {
      */
     private SparkParameters sparkParameters;
 
+    /**
+     * resource list
+     */
+    private List<ResourceInfo> resourceList;
+
+
+    public List<ResourceInfo> getResourceList() {
+        return resourceList;
+    }
+
+    public void setResourceList(List<ResourceInfo> resourceList) {
+        this.resourceList = resourceList;
+    }
+
     public int getRuleId() {
         return ruleId;
     }
@@ -88,7 +102,7 @@ public class DataQualityParameters extends AbstractParameters {
 
     @Override
     public List<ResourceInfo> getResourceFilesList() {
-        return new ArrayList<>();
+        return resourceList;
     }
 
     public SparkParameters getSparkParameters() {

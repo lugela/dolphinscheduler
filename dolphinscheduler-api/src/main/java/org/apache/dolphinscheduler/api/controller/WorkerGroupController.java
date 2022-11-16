@@ -30,6 +30,9 @@ import org.apache.dolphinscheduler.common.Constants;
 import org.apache.dolphinscheduler.common.utils.ParameterUtils;
 import org.apache.dolphinscheduler.dao.entity.User;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -136,6 +139,18 @@ public class WorkerGroupController extends BaseController {
     @AccessLogAnnotation(ignoreRequestArgs = "loginUser")
     public Result queryAllWorkerGroups(@ApiIgnore @RequestAttribute(value = Constants.SESSION_USER) User loginUser) {
         Map<String, Object> result = workerGroupService.queryAllGroup();
+        if (1 == loginUser.getUserType().getCode()){
+            //普通用户
+            String workerGroupList = loginUser.getWorkerGroupList();
+            if (null!= workerGroupList && !workerGroupList.isEmpty()){
+                List<String> userWorkerGroups = Arrays.asList(workerGroupList.split(","));
+                result.put("data",userWorkerGroups);
+            }else {
+                result.put("data",new ArrayList<String>());
+
+            }
+
+        }
         return returnDataList(result);
     }
 

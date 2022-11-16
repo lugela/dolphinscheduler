@@ -155,6 +155,16 @@
         and r.full_name = #{fullName}
     </select>
 
+
+    <select id="listResourceByIsDirectory" resultType="org.apache.dolphinscheduler.dao.entity.Resource">
+        select
+        <include refid="baseSqlV2">
+            <property name="alias" value="r"/>
+        </include>
+        from t_ds_resources r
+        where r.is_directory = #{IsDirectory}
+    </select>
+
     <update id="batchUpdateResource" parameterType="java.util.List">
         <foreach collection="resourceList" item="resource" index="index" open="" close="" separator=";">
             update t_ds_resources

@@ -185,8 +185,9 @@ public class DataQualityController extends BaseController {
     @GetMapping(value = "/getDatasourceOptionsById")
     @ResponseStatus(HttpStatus.OK)
     @ApiException(GET_DATASOURCE_OPTIONS_ERROR)
-    public Result getDatasourceOptionsById(@RequestParam(value = "datasourceId") int datasourceId) {
-        Map<String, Object> result = dqRuleService.getDatasourceOptionsById(datasourceId);
+    public Result getDatasourceOptionsById(@ApiIgnore @RequestAttribute(value = Constants.SESSION_USER) User loginUser,
+            @RequestParam(value = "datasourceId") int datasourceId) {
+        Map<String, Object> result = dqRuleService.getDatasourceOptionsById(loginUser,datasourceId);
         return returnDataList(result);
     }
 }
