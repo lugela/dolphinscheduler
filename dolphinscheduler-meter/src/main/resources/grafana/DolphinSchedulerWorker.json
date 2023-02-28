@@ -43,7 +43,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -118,7 +118,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -133,7 +133,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -177,7 +177,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "expr": "process_start_time_seconds{}",
           "refId": "A"
@@ -189,7 +189,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -263,7 +263,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "expr": "increase(dolphinscheduler_worker_submit_queue_is_full_count_total{}[1m])",
           "refId": "A"
@@ -275,7 +275,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -349,7 +349,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "expr": "increase(dolphinscheduler_worker_overload_count_total{}[1m])",
           "refId": "A"
@@ -361,7 +361,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -435,7 +435,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "expr": "dolphinscheduler_worker_running_task_gauge{}",
           "refId": "A"
@@ -447,7 +447,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -493,7 +493,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "expr": "sum(dolphinscheduler_task_execution_count_total)",
           "refId": "A"
@@ -505,7 +505,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -549,7 +549,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "expr": "sum(dolphinscheduler_task_execution_count_total{result=\"success\"}) / sum(dolphinscheduler_task_execution_count_total) * 100",
           "refId": "A"
@@ -565,7 +565,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -611,7 +611,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "rate(dolphinscheduler_task_execution_timer_seconds_sum[1m])/rate(dolphinscheduler_task_execution_timer_seconds_count[1m])",
@@ -622,7 +622,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "dolphinscheduler_task_execution_timer_seconds_max",
@@ -671,7 +671,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -711,7 +711,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -723,7 +723,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -780,7 +780,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -854,7 +854,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"SHELL\"}[1d]))",
@@ -869,7 +869,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -943,7 +943,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"unknown\"}[1d]))",
@@ -958,7 +958,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -1032,7 +1032,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"CONDITIONS\"}[1d]))",
@@ -1047,7 +1047,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -1121,7 +1121,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"BLOCKING\"}[1d]))",
@@ -1136,7 +1136,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -1210,7 +1210,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"DATAX\"}[1d]))",
@@ -1225,7 +1225,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -1299,7 +1299,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"DATA_QUALITY\"}[1d]))",
@@ -1314,7 +1314,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -1388,7 +1388,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"DATA_QUALITY\"}[1d]))",
@@ -1403,7 +1403,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -1477,7 +1477,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"DEPENDENT\"}[1d]))",
@@ -1492,7 +1492,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "q_uxM3_7k"
       },
       "fieldConfig": {
         "defaults": {
@@ -1566,7 +1566,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "q_uxM3_7k"
           },
           "editorMode": "code",
           "expr": "sum(increase(dolphinscheduler_task_execute_count_total{task_type=\"EMR\"}[1d]))",
