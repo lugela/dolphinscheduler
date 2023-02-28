@@ -17,6 +17,7 @@
 
 package org.apache.dolphinscheduler.service.quartz;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.dolphinscheduler.common.Constants;
 import org.apache.dolphinscheduler.common.enums.CommandType;
 import org.apache.dolphinscheduler.common.enums.ReleaseState;
@@ -36,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.util.StringUtils;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.annotation.Timed;
@@ -91,6 +91,7 @@ public class ProcessScheduleJob extends QuartzJobBean {
         command.setWarningGroupId(schedule.getWarningGroupId());
         String workerGroup = StringUtils.isEmpty(schedule.getWorkerGroup()) ? Constants.DEFAULT_WORKER_GROUP : schedule.getWorkerGroup();
         command.setWorkerGroup(workerGroup);
+        command.setEnvironmentCode(schedule.getEnvironmentCode());
         command.setWarningType(schedule.getWarningType());
         command.setProcessInstancePriority(schedule.getProcessInstancePriority());
         command.setProcessDefinitionVersion(processDefinition.getVersion());
