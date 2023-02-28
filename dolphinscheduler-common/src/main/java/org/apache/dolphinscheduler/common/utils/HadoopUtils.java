@@ -100,6 +100,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
             .build(new CacheLoader<String, HadoopUtils>() {
                 @Override
                 public HadoopUtils load(String key) throws Exception {
+                    logger.info("......cache expire time.....");
                     return new HadoopUtils();
                 }
             });
@@ -241,7 +242,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
             return new byte[0];
         }
 
-        try (FSDataInputStream fsDataInputStream = fs.open(new Path(hdfsFilePath))) {
+        try (FSDataInputStream fsDataInputStream = getInstance().fs.open(new Path(hdfsFilePath))) {
             return IOUtils.toByteArray(fsDataInputStream);
         }
     }
@@ -262,7 +263,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
             return Collections.emptyList();
         }
 
-        try (FSDataInputStream in = fs.open(new Path(hdfsFilePath))) {
+        try (FSDataInputStream in = getInstance().fs.open(new Path(hdfsFilePath))) {
             BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             Stream<String> stream = br.lines().skip(skipLineNums).limit(limit);
             return stream.collect(Collectors.toList());
@@ -301,7 +302,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
      */
     @Override
     public boolean mkdir(String tenantCode, String hdfsPath) throws IOException {
-        return fs.mkdirs(new Path(hdfsPath));
+        return getInstance().fs.mkdirs(new Path(hdfsPath));
     }
 
     @Override
@@ -331,7 +332,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
      */
     @Override
     public boolean copy(String srcPath, String dstPath, boolean deleteSource, boolean overwrite) throws IOException {
-        return FileUtil.copy(fs, new Path(srcPath), fs, new Path(dstPath), deleteSource, overwrite, fs.getConf());
+        return FileUtil.copy(getInstance().fs, new Path(srcPath), getInstance().fs, new Path(dstPath), deleteSource, overwrite, getInstance().fs.getConf());
     }
 
     /**
@@ -349,7 +350,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
         Path srcPath = new Path(srcFile);
         Path dstPath = new Path(dstHdfsPath);
 
-        fs.copyFromLocalFile(deleteSource, overwrite, srcPath, dstPath);
+        getInstance().fs.copyFromLocalFile(deleteSource, overwrite, srcPath, dstPath);
 
         return true;
     }
@@ -369,7 +370,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
      * @return result of copy hdfs file to local
      * @throws IOException errors
      */
-    public boolean copyHdfsToLocal(String srcHdfsFilePath, String dstFile, boolean deleteSource, boolean overwrite) throws IOException {
+    public boolean  copyHdfsToLocal(String srcHdfsFilePath, String dstFile, boolean deleteSource, boolean overwrite) throws IOException {
         Path srcPath = new Path(srcHdfsFilePath);
         File dstPath = new File(dstFile);
 
@@ -387,7 +388,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
             return false;
         }
 
-        return FileUtil.copy(fs, srcPath, dstPath, deleteSource, fs.getConf());
+        return FileUtil.copy(getInstance().fs, srcPath, dstPath, deleteSource, getInstance().fs.getConf());
     }
 
 //    @Override
@@ -407,7 +408,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
      */
     @Override
     public boolean delete(String tenantCode, String hdfsFilePath, boolean recursive) throws IOException {
-        return fs.delete(new Path(hdfsFilePath), recursive);
+        return getInstance().fs.delete(new Path(hdfsFilePath), recursive);
     }
 
     /**
@@ -419,7 +420,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
      */
     @Override
     public boolean exists(String tenantCode, String hdfsFilePath) throws IOException {
-        return fs.exists(new Path(hdfsFilePath));
+        return getInstance().fs.exists(new Path(hdfsFilePath));
     }
 
     /**
@@ -431,7 +432,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
      */
     public FileStatus[] listFileStatus(String filePath) throws IOException {
         try {
-            return fs.listStatus(new Path(filePath));
+            return getInstance().fs.listStatus(new Path(filePath));
         } catch (IOException e) {
             logger.error("Get file list exception", e);
             throw new IOException("Get file list exception", e);
@@ -448,7 +449,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
      * @throws IOException on failure
      */
     public boolean rename(String src, String dst) throws IOException {
-        return fs.rename(new Path(src), new Path(dst));
+        return getInstance().fs.rename(new Path(src), new Path(dst));
     }
 
     /**
@@ -683,7 +684,7 @@ public class HadoopUtils implements Closeable, StorageOperate {
     public void close() throws IOException {
         if (fs != null) {
             try {
-                fs.close();
+                getInstance().fs.close();
             } catch (IOException e) {
                 logger.error("Close HadoopUtils instance failed", e);
                 throw new IOException("Close HadoopUtils instance failed", e);
