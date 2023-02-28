@@ -51,10 +51,14 @@ public class SqlSplitter {
             if (line.trim().isEmpty() || line.startsWith("--")) {
                 continue;
             }
-            stmt.append(LINE_SEPARATOR).append(line);
             if (line.trim().endsWith(segmentSeparator)) {
+                stmt.append(LINE_SEPARATOR).append(line);
+                //去除分隔符
+                stmt.deleteCharAt(stmt.length()-1);
                 segments.add(stmt.toString());
                 stmt.setLength(0);
+            }else {
+                stmt.append(LINE_SEPARATOR).append(line);
             }
         }
         if (stmt.length() > 0) {
