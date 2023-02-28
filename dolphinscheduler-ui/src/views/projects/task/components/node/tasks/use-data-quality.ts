@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {Ref, reactive, ref} from 'vue'
+import {Ref, reactive,ref} from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as Fields from '../fields/index'
 import type { IJsonItem, INodeData, ITaskData } from '../types'
@@ -49,7 +49,7 @@ export function useDataQuality({
     environmentCode: null,
     failRetryInterval: 1,
     failRetryTimes: 0,
-    workerGroup: 'default',
+    workerGroup: '',
     delayTime: 0,
     ruleId: 1,
     deployMode: 'cluster',

@@ -40,7 +40,7 @@ export function useDependent({
     environmentCode: null,
     failRetryInterval: 1,
     failRetryTimes: 0,
-    workerGroup: 'default',
+    workerGroup: '',
     delayTime: 0,
     relation: 'AND',
     dependTaskList: [],

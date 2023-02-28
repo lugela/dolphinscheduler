@@ -61,7 +61,7 @@ export const useForm = () => {
       complementDependentMode: 'OFF_MODE',
       runMode: 'RUN_MODE_SERIAL',
       processInstancePriority: 'MEDIUM',
-      workerGroup: 'default',
+      workerGroup: '',
       environmentCode: null,
       startParams: null,
       expectedParallelismNumber: '',
@@ -83,7 +83,7 @@ export const useForm = () => {
       warningType: 'NONE',
       processInstancePriority: 'MEDIUM',
       warningGroupId: null as null | number,
-      workerGroup: 'default',
+      workerGroup: '',
       environmentCode: null as null | string
     },
     saving: false

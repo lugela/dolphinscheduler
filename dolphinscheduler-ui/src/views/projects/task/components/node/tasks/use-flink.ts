@@ -40,7 +40,7 @@ export function useFlink({
     environmentCode: null,
     failRetryInterval: 1,
     failRetryTimes: 0,
-    workerGroup: 'default',
+    workerGroup: '',
     delayTime: 0,
     timeout: 30,
     programType: 'SCALA',
