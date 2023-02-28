@@ -76,7 +76,9 @@ export default defineComponent({
     const tenants = ref<Tenant[]>([])
     const tenantsDropdown = computed(() => {
       if (tenants.value) {
-        formValue.value.tenantCode= tenants.value[0].tenantCode
+        if (!formValue.value.tenantCode){
+          formValue.value.tenantCode= tenants.value[0].tenantCode
+        }
         return tenants.value
           .map((t) => ({
             label: t.tenantCode,
