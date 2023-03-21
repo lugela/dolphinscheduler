@@ -52,9 +52,9 @@ public class SqlSplitter {
                 continue;
             }
             if (line.trim().endsWith(segmentSeparator)) {
-                stmt.append(LINE_SEPARATOR).append(line);
                 //去除分隔符
-                stmt.deleteCharAt(stmt.length()-1);
+                String lineNew = line.replace(segmentSeparator, "");
+                stmt.append(LINE_SEPARATOR).append(lineNew);
                 segments.add(stmt.toString());
                 stmt.setLength(0);
             }else {
