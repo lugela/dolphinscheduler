@@ -325,7 +325,38 @@ public class TaskExecuteThread implements Runnable, Delayed {
                 throw new ServiceException(e.getMessage());
             }
         }
+
+        //安全起见,这个路径不能为 /目录等需要判断，同时不能含有空格
+        if (null != execLocalPath && StringUtils.isNotBlank(execLocalPath.trim())  && !"/".equals(execLocalPath.trim())){
+            //判断当前路径是否存在,存在的情况授权755
+            String command = "chmod -R 755 "+ execLocalPath;
+            runShellCommand(command);
+        }
+
     }
+
+    public void runShellCommand(String command) {
+        String[] cmdStrings = new String[] {"sudo","sh", "-c", command};
+        Process p = null;
+        try {
+            p = Runtime.getRuntime().exec(cmdStrings);
+            int status = p.waitFor();
+            if (status != 0) {
+                logger.error("runShellCommand: {}, status: {}", command, status);
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        } finally {
+            try {
+                if (p != null) {
+                    p.destroy();
+                }
+            }catch (Exception e){
+                logger.error(e.getMessage(), e);
+            }
+        }
+    }
+
 
     /**
      * download resource check
