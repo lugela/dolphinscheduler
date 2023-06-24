@@ -383,13 +383,13 @@ public class WorkflowExecuteRunnable implements Callable<WorkflowSubmitStatue> {
                 retryTaskInstance(taskInstance);
             } else if (taskInstance.getState().typeIsFailure()) {
                 completeTaskMap.put(taskInstance.getTaskCode(), taskInstance.getId());
-                errorTaskMap.put(taskInstance.getTaskCode(), taskInstance.getId());
                 // There are child nodes and the failure policy is: CONTINUE
                 if (processInstance.getFailureStrategy() == FailureStrategy.CONTINUE && DagHelper.haveAllNodeAfterNode(
                     Long.toString(taskInstance.getTaskCode()),
                     dag)) {
                     submitPostNode(Long.toString(taskInstance.getTaskCode()));
                 } else {
+                    errorTaskMap.put(taskInstance.getTaskCode(), taskInstance.getId());
                     if (processInstance.getFailureStrategy() == FailureStrategy.END) {
                         killAllTasks();
                     }
@@ -1352,8 +1352,11 @@ public class WorkflowExecuteRunnable implements Callable<WorkflowSubmitStatue> {
      */
     private void setIndirectDepList(String taskCode, List<String> indirectDepCodeList) {
         TaskNode taskNode = dag.getNode(taskCode);
-        List<String> depCodeList = taskNode.getDepList();
-        for (String depsNode : depCodeList) {
+        // If workflow start with startNode or recoveryNode, taskNode may be null
+        if (taskNode == null) {
+            return;
+        }
+        for (String depsNode : taskNode.getDepList()) {
             if (forbiddenTaskMap.containsKey(Long.parseLong(depsNode))) {
                 setIndirectDepList(depsNode, indirectDepCodeList);
             } else {
