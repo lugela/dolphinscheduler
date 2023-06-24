@@ -82,6 +82,10 @@ public class JDBCDataSourceProvider {
         dataSource.setMaximumPoolSize(isOneSession ? 1 : PropertyUtils.getInt(Constants.SPRING_DATASOURCE_MAX_ACTIVE, 50));
         dataSource.setConnectionTestQuery(properties.getValidationQuery());
 
+        long maxlifetime = PropertyUtils.getLong(Constants.HIKARI_HIVE_MAXLIFETIME, 180000);
+        dataSource.setMaxLifetime(maxlifetime);
+        logger.info("Constants.HIKARI_HIVE_MAXLIFETIME:{}",maxlifetime);
+
         if (properties.getProps() != null) {
             properties.getProps().forEach(dataSource::addDataSourceProperty);
         }

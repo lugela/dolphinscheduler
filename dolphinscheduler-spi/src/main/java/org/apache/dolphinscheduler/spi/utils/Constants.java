@@ -149,6 +149,7 @@ public class Constants {
      */
     public static final String SUPPORT_HIVE_ONE_SESSION = "support.hive.oneSession";
 
+    public static final String HIKARI_HIVE_MAXLIFETIME = "hikari.hive.maxLifetime";
     /**
      * driver
      */
