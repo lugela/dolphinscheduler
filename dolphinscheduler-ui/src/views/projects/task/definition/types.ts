@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+import { IOption } from '@/components/form/types'
+import { IParam } from '../../workflow/definition/components/types'
+import { IEnvironmentNameOption } from '../components/node/types'
+
 export type { ITaskData, INodeData } from '../components/node/types'
 export type { ISingleSaveReq } from '@/service/modules/task-definition/types'
 
@@ -24,4 +28,13 @@ interface IRecord {
   taskName: string
 }
 
-export { IRecord }
+interface IStartState {
+  projectCode: number
+  workerGroups: Array<IOption>
+  tenantList: Array<IOption>
+  alertGroups: Array<IOption>
+  environmentList: Array<IEnvironmentNameOption>
+  startParamsList: Array<IParam>
+}
+
+export { IRecord, IStartState }

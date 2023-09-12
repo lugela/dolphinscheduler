@@ -26,6 +26,7 @@ import java.util.List;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 /**
  * datasource mapper interface
@@ -58,7 +59,6 @@ public interface DataSourceMapper extends BaseMapper<DataSource> {
      */
     List<DataSource> queryDataSourceByName(@Param("name") String name);
 
-
     /**
      * query authed datasource
      * @param userId userId
@@ -80,7 +80,6 @@ public interface DataSourceMapper extends BaseMapper<DataSource> {
      */
     List<DataSource> listAllDataSourceByType(@Param("type") Integer type);
 
-
     /**
      * query all environment list
      * @return environment list
@@ -96,7 +95,8 @@ public interface DataSourceMapper extends BaseMapper<DataSource> {
      * @param <T> T
      * @return UDF function list
      */
-    <T> List<DataSource> listAuthorizedDataSource(@Param("userId") int userId,@Param("dataSourceIds")T[] dataSourceIds);
+    <T> List<DataSource> listAuthorizedDataSource(@Param("userId") int userId,
+                                                  @Param("dataSourceIds") T[] dataSourceIds);
 
     /**
      * query datasource by name and user id
@@ -106,4 +106,15 @@ public interface DataSourceMapper extends BaseMapper<DataSource> {
      * @return If the name does not exist or the user does not have permission, it will return null
      */
     DataSource queryDataSourceByNameAndUserId(@Param("userId") int userId, @Param("name") String name);
+
+    /**
+     * selectPagingByIds
+     * @param dataSourcePage
+     * @param ids
+     * @param searchVal
+     * @return
+     */
+    IPage<DataSource> selectPagingByIds(Page<DataSource> dataSourcePage,
+                                        @Param("dataSourceIds") List<Integer> dataSourceIds,
+                                        @Param("name") String name);
 }

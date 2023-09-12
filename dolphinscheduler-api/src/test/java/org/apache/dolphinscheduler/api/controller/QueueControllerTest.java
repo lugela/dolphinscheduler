@@ -17,6 +17,7 @@
 
 package org.apache.dolphinscheduler.api.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -27,8 +28,8 @@ import org.apache.dolphinscheduler.api.enums.Status;
 import org.apache.dolphinscheduler.api.utils.Result;
 import org.apache.dolphinscheduler.common.utils.JSONUtils;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -40,6 +41,7 @@ import org.springframework.util.MultiValueMap;
  * queue controller test
  */
 public class QueueControllerTest extends AbstractControllerTest {
+
     private static final Logger logger = LoggerFactory.getLogger(QueueControllerTest.class);
 
     private static final String QUEUE_CREATE_NAME = "queue_create";
@@ -58,17 +60,17 @@ public class QueueControllerTest extends AbstractControllerTest {
 
         Result result = JSONUtils.parseObject(mvcResult.getResponse().getContentAsString(), Result.class);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals(Status.SUCCESS.getCode(),result.getCode().intValue());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(Status.SUCCESS.getCode(), result.getCode().intValue());
         logger.info("query list queue return result:{}", mvcResult.getResponse().getContentAsString());
     }
 
     @Test
     public void testQueryQueueListPagingEmpty() throws Exception {
         MultiValueMap<String, String> paramsMap = new LinkedMultiValueMap<>();
-        paramsMap.add("searchVal","");
-        paramsMap.add("pageNo","1");
-        paramsMap.add("pageSize","20");
+        paramsMap.add("searchVal", "");
+        paramsMap.add("pageNo", "1");
+        paramsMap.add("pageSize", "20");
 
         MvcResult mvcResult = mockMvc.perform(get("/queues")
                 .header(SESSION_ID, sessionId)
@@ -78,8 +80,8 @@ public class QueueControllerTest extends AbstractControllerTest {
                 .andReturn();
         Result result = JSONUtils.parseObject(mvcResult.getResponse().getContentAsString(), Result.class);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals(Status.SUCCESS.getCode(), result.getCode().intValue());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(Status.SUCCESS.getCode(), result.getCode().intValue());
         logger.info("query list-paging queue return result:{}", mvcResult.getResponse().getContentAsString());
     }
 
@@ -97,15 +99,15 @@ public class QueueControllerTest extends AbstractControllerTest {
                 .andReturn();
         Result result = JSONUtils.parseObject(mvcResult.getResponse().getContentAsString(), Result.class);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals(Status.SUCCESS.getCode(), result.getCode().intValue());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(Status.SUCCESS.getCode(), result.getCode().intValue());
         logger.info("create queue return result:{}", mvcResult.getResponse().getContentAsString());
     }
 
     @Test
     public void testUpdateQueue() throws Exception {
         MultiValueMap<String, String> paramsMap = new LinkedMultiValueMap<>();
-        paramsMap.add("id","1");
+        paramsMap.add("id", "1");
         paramsMap.add("queue", QUEUE_MODIFY_NAME);
         paramsMap.add("queueName", QUEUE_NAME_MODIFY_NAME);
 
@@ -117,8 +119,8 @@ public class QueueControllerTest extends AbstractControllerTest {
                 .andReturn();
         Result result = JSONUtils.parseObject(mvcResult.getResponse().getContentAsString(), Result.class);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals(Status.SUCCESS.getCode(),result.getCode().intValue());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(Status.SUCCESS.getCode(), result.getCode().intValue());
         logger.info("update queue return result:{}", mvcResult.getResponse().getContentAsString());
     }
 
@@ -139,8 +141,8 @@ public class QueueControllerTest extends AbstractControllerTest {
 
         Result result = JSONUtils.parseObject(mvcResult.getResponse().getContentAsString(), Result.class);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals(Status.QUEUE_VALUE_EXIST.getCode(),result.getCode().intValue());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(Status.QUEUE_VALUE_EXIST.getCode(), result.getCode().intValue());
 
         // queue name exist
         paramsMap.clear();
@@ -148,15 +150,15 @@ public class QueueControllerTest extends AbstractControllerTest {
         paramsMap.add("queueName", QUEUE_NAME_CREATE_NAME);
 
         mvcResult = mockMvc.perform(post("/queues/verify")
-                        .header(SESSION_ID, sessionId)
-                        .params(paramsMap))
+                .header(SESSION_ID, sessionId)
+                .params(paramsMap))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
         result = JSONUtils.parseObject(mvcResult.getResponse().getContentAsString(), Result.class);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals(Status.QUEUE_NAME_EXIST.getCode(),result.getCode().intValue());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(Status.QUEUE_NAME_EXIST.getCode(), result.getCode().intValue());
 
         // success
         paramsMap.clear();
@@ -171,9 +173,26 @@ public class QueueControllerTest extends AbstractControllerTest {
                 .andReturn();
         result = JSONUtils.parseObject(mvcResult.getResponse().getContentAsString(), Result.class);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals(Status.SUCCESS.getCode(),result.getCode().intValue());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(Status.SUCCESS.getCode(), result.getCode().intValue());
         logger.info(mvcResult.getResponse().getContentAsString());
         logger.info("verify queue return result:{}", mvcResult.getResponse().getContentAsString());
+    }
+    @Test
+    public void testDeleteQueueById() throws Exception {
+        MultiValueMap<String, String> paramsMap = new LinkedMultiValueMap<>();
+        paramsMap.add("id", "64");
+
+        MvcResult mvcResult = mockMvc.perform(delete("/queues/{id}", 64)
+                .header(SESSION_ID, sessionId)
+                .params(paramsMap))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+        Result result = JSONUtils.parseObject(mvcResult.getResponse().getContentAsString(), Result.class);
+
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(Status.QUEUE_NOT_EXIST.getCode(), result.getCode().intValue());
+        logger.info("delete queue return result:{}", mvcResult.getResponse().getContentAsString());
     }
 }

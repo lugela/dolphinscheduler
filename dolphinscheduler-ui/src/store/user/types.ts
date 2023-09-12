@@ -19,6 +19,9 @@ import type { UserInfoRes } from '@/service/modules/users/types'
 
 interface UserState {
   sessionId: string
+  securityConfigType: string
+  baseResDir: string
+  baseUdfDir: string
   userInfo: UserInfoRes | {}
 }
 

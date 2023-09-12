@@ -20,11 +20,13 @@ package org.apache.dolphinscheduler.plugin.task.mr;
 import static org.apache.dolphinscheduler.plugin.task.api.TaskConstants.D;
 import static org.apache.dolphinscheduler.plugin.task.api.TaskConstants.JAR;
 import static org.apache.dolphinscheduler.plugin.task.mr.MapReduceTaskConstants.MR_NAME;
-import static org.apache.dolphinscheduler.plugin.task.mr.MapReduceTaskConstants.MR_QUEUE;
+import static org.apache.dolphinscheduler.plugin.task.mr.MapReduceTaskConstants.MR_YARN_QUEUE;
 
+import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
 import org.apache.dolphinscheduler.plugin.task.api.model.ResourceInfo;
 import org.apache.dolphinscheduler.plugin.task.api.utils.ArgsUtils;
-import org.apache.dolphinscheduler.spi.utils.StringUtils;
+
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,13 +46,13 @@ public class MapReduceArgsUtils {
      * @param param param
      * @return argument list
      */
-    public static List<String> buildArgs(MapReduceParameters param) {
+    public static List<String> buildArgs(MapReduceParameters param, TaskExecutionContext taskExecutionContext) {
         List<String> args = new ArrayList<>();
 
         ResourceInfo mainJar = param.getMainJar();
         if (mainJar != null) {
             args.add(JAR);
-            args.add(mainJar.getRes());
+            args.add(taskExecutionContext.getResources().get(mainJar.getResourceName()));
         }
 
         ProgramType programType = param.getProgramType();
@@ -65,10 +67,10 @@ public class MapReduceArgsUtils {
         }
 
         String others = param.getOthers();
-        if (StringUtils.isEmpty(others) || !others.contains(MR_QUEUE)) {
-            String queue = param.getQueue();
-            if (StringUtils.isNotEmpty(queue)) {
-                args.add(String.format("%s%s=%s", D, MR_QUEUE, queue));
+        if (StringUtils.isEmpty(others) || !others.contains(MR_YARN_QUEUE)) {
+            String yarnQueue = param.getYarnQueue();
+            if (StringUtils.isNotEmpty(yarnQueue)) {
+                args.add(String.format("%s%s=%s", D, MR_YARN_QUEUE, yarnQueue));
             }
         }
 

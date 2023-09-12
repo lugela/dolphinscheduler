@@ -19,51 +19,42 @@ package org.apache.dolphinscheduler.plugin.task.datax;
 
 import static org.apache.dolphinscheduler.plugin.datasource.api.utils.PasswordUtils.decodePassword;
 import static org.apache.dolphinscheduler.plugin.task.api.TaskConstants.EXIT_CODE_FAILURE;
-import static org.apache.dolphinscheduler.plugin.task.api.TaskConstants.RWXR_XR_X;
 
+import org.apache.dolphinscheduler.common.log.SensitiveDataConverter;
+import org.apache.dolphinscheduler.common.utils.JSONUtils;
 import org.apache.dolphinscheduler.plugin.datasource.api.plugin.DataSourceClientProvider;
 import org.apache.dolphinscheduler.plugin.datasource.api.utils.DataSourceUtils;
-import org.apache.dolphinscheduler.plugin.task.api.AbstractTaskExecutor;
+import org.apache.dolphinscheduler.plugin.task.api.AbstractTask;
 import org.apache.dolphinscheduler.plugin.task.api.ShellCommandExecutor;
+import org.apache.dolphinscheduler.plugin.task.api.TaskCallBack;
+import org.apache.dolphinscheduler.plugin.task.api.TaskException;
 import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
 import org.apache.dolphinscheduler.plugin.task.api.model.Property;
 import org.apache.dolphinscheduler.plugin.task.api.model.TaskResponse;
 import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
-import org.apache.dolphinscheduler.plugin.task.api.parser.ParamUtils;
-import org.apache.dolphinscheduler.plugin.task.api.parser.ParameterUtils;
-import org.apache.dolphinscheduler.plugin.task.api.utils.MapUtils;
-import org.apache.dolphinscheduler.plugin.task.api.utils.OSUtils;
+import org.apache.dolphinscheduler.plugin.task.api.shell.IShellInterceptorBuilder;
+import org.apache.dolphinscheduler.plugin.task.api.shell.ShellInterceptorBuilderFactory;
+import org.apache.dolphinscheduler.plugin.task.api.utils.ParameterUtils;
 import org.apache.dolphinscheduler.spi.datasource.BaseConnectionParam;
 import org.apache.dolphinscheduler.spi.enums.DbType;
 import org.apache.dolphinscheduler.spi.enums.Flag;
-import org.apache.dolphinscheduler.spi.utils.JSONUtils;
-import org.apache.dolphinscheduler.spi.utils.StringUtils;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -77,20 +68,32 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class DataxTask extends AbstractTaskExecutor {
+public class DataxTask extends AbstractTask {
+
     /**
      * jvm parameters
      */
-    public static final String JVM_PARAM = " --jvm=\"-Xms%sG -Xmx%sG\" ";
+    public static final String JVM_PARAM = "--jvm=\"-Xms%sG -Xmx%sG\" ";
+
+    public static final String CUSTOM_PARAM = " -D%s='%s'";
     /**
-     * python process(datax only supports version 2.7 by default)
+     * todo: Create a shell script to execute the datax task, and read the python version from the env, so we can support multiple versions of datax python
      */
-    private static final String DATAX_PYTHON = "python2.7";
-    private static final Pattern PYTHON_PATH_PATTERN = Pattern.compile("/bin/python[\\d.]*$");
+    private static final String PYTHON_LAUNCHER = "${PYTHON_LAUNCHER}";
+
+    /**
+     * select all
+     */
+    private static final String SELECT_ALL_CHARACTER = "*";
+
+    /**
+     * post jdbc info regex
+     */
+    private static final String POST_JDBC_INFO_REGEX = "(?<=(post jdbc info:)).*(?=)";
     /**
      * datax path
      */
-    private static final String DATAX_PATH = "${DATAX_HOME}/bin/datax.py";
+    private static final String DATAX_LAUNCHER = "${DATAX_LAUNCHER}";
     /**
      * datax channel count
      */
@@ -123,7 +126,7 @@ public class DataxTask extends AbstractTaskExecutor {
         this.taskExecutionContext = taskExecutionContext;
 
         this.shellCommandExecutor = new ShellCommandExecutor(this::logHandle,
-                taskExecutionContext, logger);
+                taskExecutionContext, log);
     }
 
     /**
@@ -131,59 +134,57 @@ public class DataxTask extends AbstractTaskExecutor {
      */
     @Override
     public void init() {
-        logger.info("datax task params {}", taskExecutionContext.getTaskParams());
         dataXParameters = JSONUtils.parseObject(taskExecutionContext.getTaskParams(), DataxParameters.class);
+        log.info("Initialize datax task params {}", JSONUtils.toPrettyJsonString(dataXParameters));
 
-        if (!dataXParameters.checkParameters()) {
+        if (dataXParameters == null || !dataXParameters.checkParameters()) {
             throw new RuntimeException("datax task params is not valid");
         }
-
-        dataxTaskExecutionContext = dataXParameters.generateExtendedContext(taskExecutionContext.getResourceParametersHelper());
+        SensitiveDataConverter.addMaskPattern(POST_JDBC_INFO_REGEX);
+        dataxTaskExecutionContext =
+                dataXParameters.generateExtendedContext(taskExecutionContext.getResourceParametersHelper());
     }
 
-    /**
-     * run DataX process
-     *
-     * @throws Exception if error throws Exception
-     */
+    @SuppressWarnings("unchecked")
     @Override
-    public void handle() throws Exception {
+    public void handle(TaskCallBack taskCallBack) throws TaskException {
         try {
             // replace placeholder,and combine local and global parameters
-            Map<String, Property> paramsMap = ParamUtils.convert(taskExecutionContext, getParameters());
-            if (MapUtils.isEmpty(paramsMap)) {
-                paramsMap = new HashMap<>();
-            }
-            if (MapUtils.isNotEmpty(taskExecutionContext.getParamsMap())) {
-                paramsMap.putAll(taskExecutionContext.getParamsMap());
-            }
+            Map<String, Property> paramsMap = taskExecutionContext.getPrepareParamsMap();
 
-            // run datax procesDataSourceService.s
-            String jsonFilePath = buildDataxJsonFile(paramsMap);
-            String shellCommandFilePath = buildShellCommandFile(jsonFilePath, paramsMap);
-            TaskResponse commandExecuteResult = shellCommandExecutor.run(shellCommandFilePath);
+            IShellInterceptorBuilder<?, ?> shellActuatorBuilder = ShellInterceptorBuilderFactory.newBuilder()
+                    .properties(ParameterUtils.convert(paramsMap))
+                    .appendScript(buildCommand(buildDataxJsonFile(paramsMap), paramsMap));
+
+            TaskResponse commandExecuteResult = shellCommandExecutor.run(shellActuatorBuilder, taskCallBack);
 
             setExitStatusCode(commandExecuteResult.getExitStatusCode());
-            setAppIds(commandExecuteResult.getAppIds());
             setProcessId(commandExecuteResult.getProcessId());
-        } catch (Exception e) {
-            logger.error("datax task error", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("The current DataX task has been interrupted", e);
             setExitStatusCode(EXIT_CODE_FAILURE);
-            throw e;
+            throw new TaskException("The current DataX task has been interrupted", e);
+        } catch (Exception e) {
+            log.error("datax task error", e);
+            setExitStatusCode(EXIT_CODE_FAILURE);
+            throw new TaskException("Execute DataX task failed", e);
         }
     }
 
     /**
      * cancel DataX process
      *
-     * @param cancelApplication cancelApplication
-     * @throws Exception if error throws Exception
+     * @throws TaskException if error throws Exception
      */
     @Override
-    public void cancelApplication(boolean cancelApplication)
-            throws Exception {
+    public void cancel() throws TaskException {
         // cancel process
-        shellCommandExecutor.cancelApplication();
+        try {
+            shellCommandExecutor.cancelApplication();
+        } catch (Exception e) {
+            throw new TaskException("cancel application error", e);
+        }
     }
 
     /**
@@ -192,8 +193,7 @@ public class DataxTask extends AbstractTaskExecutor {
      * @return datax json file name
      * @throws Exception if error throws Exception
      */
-    private String buildDataxJsonFile(Map<String, Property> paramsMap)
-            throws Exception {
+    private String buildDataxJsonFile(Map<String, Property> paramsMap) throws Exception {
         // generate json
         String fileName = String.format("%s/%s_job.json",
                 taskExecutionContext.getExecutePath(),
@@ -206,7 +206,7 @@ public class DataxTask extends AbstractTaskExecutor {
         }
 
         if (dataXParameters.getCustomConfig() == Flag.YES.ordinal()) {
-            json = dataXParameters.getJson().replaceAll("\\r\\n", "\n");
+            json = dataXParameters.getJson().replaceAll("\\r\\n", System.lineSeparator());
         } else {
             ObjectNode job = JSONUtils.createObjectNode();
             job.putArray("content").addAll(buildDataxJobContentJson());
@@ -219,9 +219,9 @@ public class DataxTask extends AbstractTaskExecutor {
         }
 
         // replace placeholder
-        json = ParameterUtils.convertParameterPlaceholders(json, ParamUtils.convert(paramsMap));
+        json = ParameterUtils.convertParameterPlaceholders(json, ParameterUtils.convert(paramsMap));
 
-        logger.debug("datax job json : {}", json);
+        log.debug("datax job json : {}", json);
 
         // create datax json file
         FileUtils.writeStringToFile(new File(fileName), json, StandardCharsets.UTF_8);
@@ -232,7 +232,6 @@ public class DataxTask extends AbstractTaskExecutor {
      * build datax job config
      *
      * @return collection of datax job config JSONObject
-     * @throws SQLException if error throws SQLException
      */
     private List<ObjectNode> buildDataxJobContentJson() {
 
@@ -271,7 +270,8 @@ public class DataxTask extends AbstractTaskExecutor {
         ArrayNode tableArr = writerConn.putArray("table");
         tableArr.add(dataXParameters.getTargetTable());
 
-        writerConn.put("jdbcUrl", DataSourceUtils.getJdbcUrl(DbType.valueOf(dataXParameters.getDtType()), dataTargetCfg));
+        writerConn.put("jdbcUrl",
+                DataSourceUtils.getJdbcUrl(DbType.valueOf(dataXParameters.getDtType()), dataTargetCfg));
         writerConnArr.add(writerConn);
 
         ObjectNode writerParam = JSONUtils.createObjectNode();
@@ -375,66 +375,30 @@ public class DataxTask extends AbstractTaskExecutor {
      * create command
      *
      * @return shell command file name
-     * @throws Exception if error throws Exception
      */
-    private String buildShellCommandFile(String jobConfigFilePath, Map<String, Property> paramsMap)
-            throws Exception {
-        // generate scripts
-        String fileName = String.format("%s/%s_node.%s",
-                taskExecutionContext.getExecutePath(),
-                taskExecutionContext.getTaskAppId(),
-                OSUtils.isWindows() ? "bat" : "sh");
-
-        Path path = new File(fileName).toPath();
-
-        if (Files.exists(path)) {
-            return fileName;
-        }
-
+    protected String buildCommand(String jobConfigFilePath, Map<String, Property> paramsMap) {
         // datax python command
-        StringBuilder sbr = new StringBuilder();
-        sbr.append(getPythonCommand());
-        sbr.append(" ");
-        sbr.append(DATAX_PATH);
-        sbr.append(" ");
-        sbr.append(loadJvmEnv(dataXParameters));
-        sbr.append(jobConfigFilePath);
-
-        // replace placeholder
-        String dataxCommand = ParameterUtils.convertParameterPlaceholders(sbr.toString(), ParamUtils.convert(paramsMap));
-
-        logger.debug("raw script : {}", dataxCommand);
-
-        // create shell command file
-        Set<PosixFilePermission> perms = PosixFilePermissions.fromString(RWXR_XR_X);
-        FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(perms);
-
-        if (OSUtils.isWindows()) {
-            Files.createFile(path);
-        } else {
-            Files.createFile(path, attr);
-        }
-
-        Files.write(path, dataxCommand.getBytes(), StandardOpenOption.APPEND);
-
-        return fileName;
+        return PYTHON_LAUNCHER +
+                " " +
+                DATAX_LAUNCHER +
+                " " +
+                loadJvmEnv(dataXParameters) +
+                addCustomParameters(paramsMap) +
+                " " +
+                jobConfigFilePath;
     }
 
-    public String getPythonCommand() {
-        String pythonHome = System.getenv("PYTHON_HOME");
-        return getPythonCommand(pythonHome);
-    }
-
-    public String getPythonCommand(String pythonHome) {
-        if (StringUtils.isEmpty(pythonHome)) {
-            return DATAX_PYTHON;
+    private StringBuilder addCustomParameters(Map<String, Property> paramsMap) {
+        if (paramsMap == null || paramsMap.size() == 0) {
+            return new StringBuilder();
         }
-        String pythonBinPath = "/bin/" + DATAX_PYTHON;
-        Matcher matcher = PYTHON_PATH_PATTERN.matcher(pythonHome);
-        if (matcher.find()) {
-            return matcher.replaceAll(pythonBinPath);
+        StringBuilder customParameters = new StringBuilder("-p \"");
+        for (Map.Entry<String, Property> entry : paramsMap.entrySet()) {
+            customParameters.append(String.format(CUSTOM_PARAM, entry.getKey(), entry.getValue().getValue()));
         }
-        return Paths.get(pythonHome, pythonBinPath).toString();
+        customParameters.replace(4, 5, "");
+        customParameters.append("\"");
+        return customParameters;
     }
 
     public String loadJvmEnv(DataxParameters dataXParameters) {
@@ -452,11 +416,12 @@ public class DataxTask extends AbstractTaskExecutor {
      * @param sql sql for data synchronization
      * @return Keyword converted column names
      */
-    private String[] parsingSqlColumnNames(DbType sourceType, DbType targetType, BaseConnectionParam dataSourceCfg, String sql) {
+    private String[] parsingSqlColumnNames(DbType sourceType, DbType targetType, BaseConnectionParam dataSourceCfg,
+                                           String sql) {
         String[] columnNames = tryGrammaticalAnalysisSqlColumnNames(sourceType, sql);
 
         if (columnNames == null || columnNames.length == 0) {
-            logger.info("try to execute sql analysis query column name");
+            log.info("try to execute sql analysis query column name");
             columnNames = tryExecuteSqlResolveColumnNames(sourceType, dataSourceCfg, sql);
         }
 
@@ -479,7 +444,7 @@ public class DataxTask extends AbstractTaskExecutor {
         try {
             SQLStatementParser parser = DataxUtils.getSqlStatementParser(dbType, sql);
             if (parser == null) {
-                logger.warn("database driver [{}] is not support grammatical analysis sql", dbType);
+                log.warn("database driver [{}] is not support grammatical analysis sql", dbType);
                 return new String[0];
             }
 
@@ -518,18 +483,23 @@ public class DataxTask extends AbstractTaskExecutor {
                     }
                 } else {
                     throw new RuntimeException(
-                            String.format("grammatical analysis sql column [ %s ] failed", item.toString()));
+                            String.format("grammatical analysis sql column [ %s ] failed", item));
+                }
+
+                if (SELECT_ALL_CHARACTER.equals(item.toString())) {
+                    log.info("sql contains *, grammatical analysis failed");
+                    return new String[0];
                 }
 
                 if (columnName == null) {
                     throw new RuntimeException(
-                            String.format("grammatical analysis sql column [ %s ] failed", item.toString()));
+                            String.format("grammatical analysis sql column [ %s ] failed", item));
                 }
 
                 columnNames[i] = columnName;
             }
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
             return new String[0];
         }
 
@@ -549,7 +519,8 @@ public class DataxTask extends AbstractTaskExecutor {
         sql = sql.replace(";", "");
 
         try (
-                Connection connection = DataSourceClientProvider.getInstance().getConnection(sourceType, baseDataSource);
+                Connection connection =
+                        DataSourceClientProvider.getAdHocConnection(sourceType, baseDataSource);
                 PreparedStatement stmt = connection.prepareStatement(sql);
                 ResultSet resultSet = stmt.executeQuery()) {
 
@@ -557,10 +528,10 @@ public class DataxTask extends AbstractTaskExecutor {
             int num = md.getColumnCount();
             columnNames = new String[num];
             for (int i = 1; i <= num; i++) {
-                columnNames[i - 1] = md.getColumnName(i).replace("t.","");
+                columnNames[i - 1] = md.getColumnName(i).replace("t.", "");
             }
         } catch (SQLException | ExecutionException e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             return null;
         }
 

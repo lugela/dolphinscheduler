@@ -18,7 +18,7 @@
 package org.apache.dolphinscheduler.plugin.task.dq.rule.parser;
 
 import org.apache.dolphinscheduler.plugin.task.api.DataQualityTaskExecutionContext;
-import org.apache.dolphinscheduler.plugin.task.api.parser.ParameterUtils;
+import org.apache.dolphinscheduler.plugin.task.api.utils.ParameterUtils;
 import org.apache.dolphinscheduler.plugin.task.dq.exception.DataQualityException;
 import org.apache.dolphinscheduler.plugin.task.dq.rule.RuleManager;
 import org.apache.dolphinscheduler.plugin.task.dq.rule.parameter.BaseConfig;
@@ -39,13 +39,14 @@ public class MultiTableComparisonRuleParser implements IRuleParser {
                                           DataQualityTaskExecutionContext context) throws DataQualityException {
 
         List<BaseConfig> readerConfigList =
-                RuleParserUtils.getReaderConfigList(inputParameterValue,context);
-        RuleParserUtils.addStatisticsValueTableReaderConfig(readerConfigList,context);
+                RuleParserUtils.getReaderConfigList(inputParameterValue, context);
+        RuleParserUtils.addStatisticsValueTableReaderConfig(readerConfigList, context);
 
         List<BaseConfig> transformerConfigList = new ArrayList<>();
 
         List<BaseConfig> writerConfigList = RuleParserUtils.getWriterConfigList(
-                ParameterUtils.convertParameterPlaceholders(RuleManager.MULTI_TABLE_COMPARISON_WRITER_SQL,inputParameterValue),
+                ParameterUtils.convertParameterPlaceholders(RuleManager.MULTI_TABLE_COMPARISON_WRITER_SQL,
+                        inputParameterValue),
                 context);
 
         return new DataQualityConfiguration(

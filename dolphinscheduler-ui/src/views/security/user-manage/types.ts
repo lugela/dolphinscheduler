@@ -43,6 +43,8 @@ interface IRecord {
   state: 0 | 1
   createTime: string
   updateTime: string
+  userPassword?: string
+  confirmPassword?: string
 }
 
 interface IResourceOption {

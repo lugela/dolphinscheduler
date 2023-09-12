@@ -73,18 +73,8 @@ export function useTable() {
       },
       {
         title: t('security.k8s_namespace.k8s_cluster'),
-        key: 'k8s',
+        key: 'clusterName',
         ...COLUMN_WIDTH_CONFIG['name']
-      },
-      {
-        title: t('security.k8s_namespace.owner'),
-        key: 'owner',
-        ...COLUMN_WIDTH_CONFIG['userName']
-      },
-      {
-        title: t('security.k8s_namespace.tag'),
-        key: 'tag',
-        ...COLUMN_WIDTH_CONFIG['tag']
       },
       {
         title: t('security.k8s_namespace.limit_cpu'),

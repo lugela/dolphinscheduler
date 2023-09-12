@@ -23,10 +23,10 @@ import org.apache.dolphinscheduler.dao.entity.ProcessDefinition;
 import org.apache.dolphinscheduler.dao.entity.ProcessInstance;
 import org.apache.dolphinscheduler.dao.entity.TaskInstance;
 import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
-import org.apache.dolphinscheduler.remote.command.Command;
-import org.apache.dolphinscheduler.remote.command.TaskDispatchCommand;
+import org.apache.dolphinscheduler.remote.command.Message;
+import org.apache.dolphinscheduler.remote.command.task.TaskDispatchRequest;
 import org.apache.dolphinscheduler.remote.utils.Host;
-import org.apache.dolphinscheduler.server.builder.TaskExecutionContextBuilder;
+import org.apache.dolphinscheduler.server.master.builder.TaskExecutionContextBuilder;
 import org.apache.dolphinscheduler.server.master.dispatch.context.ExecutionContext;
 import org.apache.dolphinscheduler.server.master.dispatch.enums.ExecutorType;
 
@@ -36,25 +36,26 @@ import org.mockito.Mockito;
  * for test use only
  */
 public class ExecutionContextTestUtils {
+
     public static ExecutionContext getExecutionContext(int port) {
         TaskInstance taskInstance = Mockito.mock(TaskInstance.class);
         ProcessDefinition processDefinition = Mockito.mock(ProcessDefinition.class);
+        processDefinition.setId(0);
         ProcessInstance processInstance = new ProcessInstance();
+        processInstance.setId(0);
         processInstance.setCommandType(CommandType.COMPLEMENT_DATA);
         taskInstance.setProcessInstance(processInstance);
         TaskExecutionContext context = TaskExecutionContextBuilder.get()
-                                                                  .buildTaskInstanceRelatedInfo(taskInstance)
-                                                                  .buildProcessInstanceRelatedInfo(processInstance)
-                                                                  .buildProcessDefinitionRelatedInfo(processDefinition)
-                                                                  .create();
+                .buildWorkflowInstanceHost("127.0.0.1:5678")
+                .buildTaskInstanceRelatedInfo(taskInstance)
+                .buildProcessInstanceRelatedInfo(processInstance)
+                .buildProcessDefinitionRelatedInfo(processDefinition)
+                .create();
 
-        TaskDispatchCommand requestCommand = new TaskDispatchCommand(context,
-                                                                     "127.0.0.1:5678",
-                                                                     "127.0.0.1:5678",
-                                                                     System.currentTimeMillis());
-        Command command = requestCommand.convert2Command();
+        TaskDispatchRequest requestCommand = new TaskDispatchRequest(context);
+        Message message = requestCommand.convert2Command();
 
-        ExecutionContext executionContext = new ExecutionContext(command, ExecutorType.WORKER, taskInstance);
+        ExecutionContext executionContext = new ExecutionContext(message, ExecutorType.WORKER, taskInstance);
         executionContext.setHost(Host.of(NetUtils.getAddr(port)));
 
         return executionContext;

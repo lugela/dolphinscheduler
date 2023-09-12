@@ -17,18 +17,20 @@
 
 package org.apache.dolphinscheduler.plugin.alert.dingtalk;
 
-import static org.apache.dolphinscheduler.spi.utils.Constants.STRING_FALSE;
-import static org.apache.dolphinscheduler.spi.utils.Constants.STRING_NO;
-import static org.apache.dolphinscheduler.spi.utils.Constants.STRING_TRUE;
-import static org.apache.dolphinscheduler.spi.utils.Constants.STRING_YES;
+import static org.apache.dolphinscheduler.common.constants.Constants.STRING_FALSE;
+import static org.apache.dolphinscheduler.common.constants.Constants.STRING_NO;
+import static org.apache.dolphinscheduler.common.constants.Constants.STRING_TRUE;
+import static org.apache.dolphinscheduler.common.constants.Constants.STRING_YES;
 
 import org.apache.dolphinscheduler.alert.api.AlertChannel;
 import org.apache.dolphinscheduler.alert.api.AlertChannelFactory;
-import org.apache.dolphinscheduler.spi.params.PasswordParam;
+import org.apache.dolphinscheduler.alert.api.AlertInputTips;
+import org.apache.dolphinscheduler.spi.params.base.DataType;
 import org.apache.dolphinscheduler.spi.params.base.ParamsOptions;
 import org.apache.dolphinscheduler.spi.params.base.PluginParams;
 import org.apache.dolphinscheduler.spi.params.base.Validate;
 import org.apache.dolphinscheduler.spi.params.input.InputParam;
+import org.apache.dolphinscheduler.spi.params.input.number.InputNumberParam;
 import org.apache.dolphinscheduler.spi.params.radio.RadioParam;
 
 import java.util.Arrays;
@@ -38,6 +40,7 @@ import com.google.auto.service.AutoService;
 
 @AutoService(AlertChannelFactory.class)
 public final class DingTalkAlertChannelFactory implements AlertChannelFactory {
+
     @Override
     public String name() {
         return "DingTalk";
@@ -67,8 +70,10 @@ public final class DingTalkAlertChannelFactory implements AlertChannelFactory {
 
         RadioParam msgTypeParam = RadioParam
                 .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_MSG_TYPE, DingTalkParamsConstants.DING_TALK_MSG_TYPE)
-                .addParamsOptions(new ParamsOptions(DingTalkParamsConstants.DING_TALK_MSG_TYPE_TEXT, DingTalkParamsConstants.DING_TALK_MSG_TYPE_TEXT, false))
-                .addParamsOptions(new ParamsOptions(DingTalkParamsConstants.DING_TALK_MSG_TYPE_MARKDOWN, DingTalkParamsConstants.DING_TALK_MSG_TYPE_MARKDOWN, false))
+                .addParamsOptions(new ParamsOptions(DingTalkParamsConstants.DING_TALK_MSG_TYPE_TEXT,
+                        DingTalkParamsConstants.DING_TALK_MSG_TYPE_TEXT, false))
+                .addParamsOptions(new ParamsOptions(DingTalkParamsConstants.DING_TALK_MSG_TYPE_MARKDOWN,
+                        DingTalkParamsConstants.DING_TALK_MSG_TYPE_MARKDOWN, false))
                 .setValue(DingTalkParamsConstants.DING_TALK_MSG_TYPE_TEXT)
                 .addValidate(Validate.newBuilder()
                         .setRequired(false)
@@ -76,13 +81,15 @@ public final class DingTalkAlertChannelFactory implements AlertChannelFactory {
                 .build();
 
         InputParam atMobilesParam = InputParam
-                .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_AT_MOBILES, DingTalkParamsConstants.DING_TALK_AT_MOBILES)
+                .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_AT_MOBILES,
+                        DingTalkParamsConstants.DING_TALK_AT_MOBILES)
                 .addValidate(Validate.newBuilder()
                         .setRequired(false)
                         .build())
                 .build();
         InputParam atUserIdsParam = InputParam
-                .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_AT_USERIDS, DingTalkParamsConstants.DING_TALK_AT_USERIDS)
+                .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_AT_USERIDS,
+                        DingTalkParamsConstants.DING_TALK_AT_USERIDS)
                 .addValidate(Validate.newBuilder()
                         .setRequired(false)
                         .build())
@@ -98,7 +105,8 @@ public final class DingTalkAlertChannelFactory implements AlertChannelFactory {
                 .build();
 
         RadioParam isEnableProxy = RadioParam
-                .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_PROXY_ENABLE, DingTalkParamsConstants.DING_TALK_PROXY_ENABLE)
+                .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_PROXY_ENABLE,
+                        DingTalkParamsConstants.DING_TALK_PROXY_ENABLE)
                 .addParamsOptions(new ParamsOptions(STRING_YES, STRING_TRUE, false))
                 .addParamsOptions(new ParamsOptions(STRING_NO, STRING_FALSE, false))
                 .setValue(STRING_FALSE)
@@ -113,10 +121,11 @@ public final class DingTalkAlertChannelFactory implements AlertChannelFactory {
                         .build())
                 .build();
 
-        InputParam portParam = InputParam
+        InputNumberParam portParam = InputNumberParam
                 .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_PORT, DingTalkParamsConstants.DING_TALK_PORT)
                 .addValidate(Validate.newBuilder()
                         .setRequired(false)
+                        .setType(DataType.NUMBER.getDataType())
                         .build())
                 .build();
 
@@ -126,12 +135,14 @@ public final class DingTalkAlertChannelFactory implements AlertChannelFactory {
                         .setRequired(false)
                         .build())
                 .build();
-        PasswordParam passwordParam = PasswordParam
+        InputParam passwordParam = InputParam
                 .newBuilder(DingTalkParamsConstants.NAME_DING_TALK_PASSWORD, DingTalkParamsConstants.DING_TALK_PASSWORD)
-                .setPlaceholder("if enable use authentication, you need input password")
+                .setPlaceholder(AlertInputTips.PASSWORD.getMsg())
+                .setType("password")
                 .build();
 
-        return Arrays.asList(webHookParam, keywordParam, secretParam, msgTypeParam, atMobilesParam, atUserIdsParam, isAtAll, isEnableProxy, proxyParam, portParam, userParam, passwordParam);
+        return Arrays.asList(webHookParam, keywordParam, secretParam, msgTypeParam, atMobilesParam, atUserIdsParam,
+                isAtAll, isEnableProxy, proxyParam, portParam, userParam, passwordParam);
     }
 
     @Override

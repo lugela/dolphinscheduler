@@ -16,23 +16,24 @@
  */
 package org.apache.dolphinscheduler.dao.entity;
 
+import java.util.Date;
+import java.util.Objects;
+
+import lombok.Data;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-import java.util.Date;
-
-/**
- * queue
- */
+@Data
 @TableName("t_ds_queue")
 public class Queue {
 
     /**
      * id
      */
-    @TableId(value="id", type=IdType.AUTO)
-    private int id;
+    @TableId(value = "id", type = IdType.AUTO)
+    private Integer id;
     /**
      * queue name
      */
@@ -71,57 +72,6 @@ public class Queue {
         this.updateTime = now;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getQueueName() {
-        return queueName;
-    }
-
-    public void setQueueName(String queueName) {
-        this.queueName = queueName;
-    }
-
-    public String getQueue() {
-        return queue;
-    }
-
-    public void setQueue(String queue) {
-        this.queue = queue;
-    }
-
-    public Date getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
-    }
-
-    public Date getUpdateTime() {
-        return updateTime;
-    }
-
-    public void setUpdateTime(Date updateTime) {
-        this.updateTime = updateTime;
-    }
-
-    @Override
-    public String toString() {
-        return "Queue{" +
-                "id=" + id +
-                ", queueName='" + queueName + '\'' +
-                ", queue='" + queue + '\'' +
-                ", createTime=" + createTime +
-                ", updateTime=" + updateTime +
-                '}';
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -133,7 +83,7 @@ public class Queue {
 
         Queue queue1 = (Queue) o;
 
-        if (id != queue1.id) {
+        if (!Objects.equals(id, queue1.id)) {
             return false;
         }
         if (!queueName.equals(queue1.queueName)) {

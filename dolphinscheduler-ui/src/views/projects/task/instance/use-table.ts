@@ -46,6 +46,7 @@ export function useTable() {
   const router: Router = useRouter()
   const projectCode = Number(route.params.projectCode)
   const processInstanceId = Number(route.params.processInstanceId)
+  const taskName = route.params.taskName
 
   const variables = reactive({
     columns: [],
@@ -53,7 +54,7 @@ export function useTable() {
     tableData: [] as IRecord[],
     page: ref(1),
     pageSize: ref(10),
-    searchVal: ref(null),
+    searchVal: ref(taskName || null),
     processInstanceId: ref(processInstanceId ? processInstanceId : null),
     host: ref(null),
     stateType: ref(null),
@@ -81,12 +82,18 @@ export function useTable() {
       {
         title: t('project.task.task_name'),
         key: 'name',
-        ...COLUMN_WIDTH_CONFIG['name']
+        ...COLUMN_WIDTH_CONFIG['name'],
+        resizable: true,
+        minWidth: 200,
+        maxWidth: 600
       },
       {
         title: t('project.task.workflow_instance'),
         key: 'processInstanceName',
         ...COLUMN_WIDTH_CONFIG['linkName'],
+        resizable: true,
+        minWidth: 300,
+        maxWidth: 600,
         render: (row: {
           processInstanceId: number
           processInstanceName: string
@@ -94,18 +101,22 @@ export function useTable() {
           h(
             ButtonLink,
             {
-              onClick: () =>
-                void router.push({
+              onClick: () => {
+                const routeUrl = router.resolve({
                   name: 'workflow-instance-detail',
                   params: { id: row.processInstanceId },
                   query: { code: projectCode }
                 })
+                window.open(routeUrl.href, '_blank')
+              }
             },
             {
               default: () =>
                 h(
                   NEllipsis,
-                  COLUMN_WIDTH_CONFIG['linkEllipsis'],
+                  {
+                    style: 'max-width: 580px;line-height: 1.5'
+                  },
                   () => row.processInstanceName
                 )
             }
@@ -167,6 +178,12 @@ export function useTable() {
         key: 'host',
         ...COLUMN_WIDTH_CONFIG['name'],
         render: (row: IRecord) => row.host || '-'
+      },
+      {
+        title: t('project.task.app_link'),
+        key: 'appLink',
+        ...COLUMN_WIDTH_CONFIG['name'],
+        render: (row: IRecord) => row.appLink || '-'
       },
       {
         title: t('project.task.operation'),

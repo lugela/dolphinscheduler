@@ -34,7 +34,7 @@ public interface QueueService {
      * @param loginUser login user
      * @return queue list
      */
-    Map<String, Object> queryList(User loginUser);
+    Result queryList(User loginUser);
 
     /**
      * query queue list paging
@@ -55,7 +55,7 @@ public interface QueueService {
      * @param queueName queue name
      * @return create result
      */
-    Map<String, Object> createQueue(User loginUser, String queue, String queueName);
+    Result createQueue(User loginUser, String queue, String queueName);
 
     /**
      * update queue
@@ -66,7 +66,17 @@ public interface QueueService {
      * @param queueName queue name
      * @return update result code
      */
-    Map<String, Object> updateQueue(User loginUser, int id, String queue, String queueName);
+    Result updateQueue(User loginUser, int id, String queue, String queueName);
+
+    /**
+     * delete queue
+     *
+     * @param loginUser login user
+     * @param id queue id
+     * @return delete result code
+     * @throws Exception exception
+     */
+    Map<String, Object> deleteQueueById(User loginUser, int id) throws Exception;
 
     /**
      * verify queue and queueName

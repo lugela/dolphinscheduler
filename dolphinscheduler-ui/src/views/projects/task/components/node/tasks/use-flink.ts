@@ -52,7 +52,9 @@ export function useFlink({
     taskManagerMemory: '2G',
     slot: 1,
     taskManager: 2,
-    parallelism: 1
+    parallelism: 1,
+    timeoutNotifyStrategy: ['WARN'],
+    yarnQueue: ''
   })
 
   return {
@@ -60,6 +62,7 @@ export function useFlink({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
       Fields.useWorkerGroup(),

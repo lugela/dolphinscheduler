@@ -15,7 +15,13 @@
  * limitations under the License.
  */
 
-import { defineComponent, PropType, toRefs, watch } from 'vue'
+import {
+  defineComponent,
+  getCurrentInstance,
+  PropType,
+  toRefs,
+  watch
+} from 'vue'
 import Modal from '@/components/modal'
 import { NForm, NFormItem, NInput, NSelect } from 'naive-ui'
 import { useModal } from './use-modal'
@@ -25,13 +31,13 @@ const envConfigPlaceholder =
   'export HADOOP_HOME=/opt/hadoop-2.6.5\n' +
   'export HADOOP_CONF_DIR=/etc/hadoop/conf\n' +
   'export SPARK_HOME=/opt/soft/spark\n' +
-  'export PYTHON_HOME=/opt/soft/python\n' +
+  'export PYTHON_LAUNCHER=/opt/soft/python/bin/python3\n' +
   'export JAVA_HOME=/opt/java/jdk1.8.0_181-amd64\n' +
   'export HIVE_HOME=/opt/soft/hive\n' +
   'export FLINK_HOME=/opt/soft/flink\n' +
-  'export DATAX_HOME=/opt/soft/datax\n' +
+  'export DATAX_LAUNCHER=/opt/soft/datax/bin/datax.py\n' +
   'export YARN_CONF_DIR=/etc/hadoop/conf\n' +
-  'export PATH=$HADOOP_HOME/bin:$SPARK_HOME/bin:$PYTHON_HOME/bin:$JAVA_HOME/bin:$HIVE_HOME/bin:$FLINK_HOME/bin:$DATAX_HOME/bin:$PATH\n' +
+  'export PATH=$HADOOP_HOME/bin:$SPARK_HOME/bin:$PYTHON_LAUNCHER:$JAVA_HOME/bin:$HIVE_HOME/bin:$FLINK_HOME/bin:$DATAX_LAUNCHER:$PATH\n' +
   'export HADOOP_CLASSPATH=`hadoop classpath`\n'
 
 const EnvironmentModal = defineComponent({
@@ -69,6 +75,8 @@ const EnvironmentModal = defineComponent({
       handleValidate(props.statusRef)
     }
 
+    const trim = getCurrentInstance()?.appContext.config.globalProperties.trim
+
     watch(
       () => props.showModalRef,
       () => {
@@ -105,7 +113,7 @@ const EnvironmentModal = defineComponent({
       }
     )
 
-    return { t, ...toRefs(variables), cancelModal, confirmModal }
+    return { t, ...toRefs(variables), cancelModal, confirmModal, trim }
   },
   render() {
     const { t } = this
@@ -139,6 +147,7 @@ const EnvironmentModal = defineComponent({
                   path='name'
                 >
                   <NInput
+                    allowInput={this.trim}
                     class='input-environment-name'
                     placeholder={t(
                       'security.environment.environment_name_tips'

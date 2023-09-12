@@ -17,7 +17,7 @@
 
 import { VNode } from 'vue'
 import type { SelectOption } from 'naive-ui'
-import type { TaskType } from '@/views/projects/task/constants/task-type'
+import type { TaskExecuteType, TaskType } from '@/store/project/types'
 import type { IDataBase } from '@/service/modules/data-source/types'
 import type {
   IFormItem,
@@ -33,15 +33,20 @@ export type {
 export type { IResource, ProgramType, IMainJar } from '@/store/project/types'
 export type { ITaskState } from '@/common/types'
 
+export type RelationType = 'AND' | 'OR'
+
 type SourceType = 'MYSQL' | 'HDFS' | 'HIVE'
 type ModelType = 'import' | 'export'
-type RelationType = 'AND' | 'OR'
 type ITaskType = TaskType
 type IDateType = 'hour' | 'day' | 'week' | 'month'
 
 interface IOption {
   label: string
   value: string | number
+}
+
+interface IRenderOption extends IOption {
+  filterLabel: string
 }
 
 interface ITaskPriorityOption extends SelectOption {
@@ -61,17 +66,35 @@ interface ILocalParam {
   value?: string
 }
 
+interface ILabel {
+  label: string
+  value: string
+}
+
+interface IMatchExpression {
+  key: string
+  operator: string
+  values: string
+}
+
 interface IResponseJsonItem extends Omit<IJsonItemParams, 'type'> {
   type: 'input' | 'select' | 'radio' | 'group'
   emit: 'change'[]
 }
 
-interface IDependpendItem {
-  depTaskCode?: number
-  status?: 'SUCCESS' | 'FAILURE'
+interface IDependentItemOptions {
   definitionCodeOptions?: IOption[]
   depTaskCodeOptions?: IOption[]
   dateOptions?: IOption[]
+}
+
+interface IDependTaskOptions {
+  dependItemList: IDependentItemOptions[]
+}
+
+interface IDependentItem {
+  depTaskCode?: number
+  status?: 'SUCCESS' | 'FAILURE'
   projectCode?: number
   definitionCode?: number
   cycle?: 'month' | 'week' | 'day' | 'hour'
@@ -82,7 +105,7 @@ interface IDependTask {
   condition?: string
   nextNode?: number
   relation?: RelationType
-  dependItemList?: IDependpendItem[]
+  dependItemList?: IDependentItem[]
 }
 
 interface ISwitchResult {
@@ -90,8 +113,22 @@ interface ISwitchResult {
   nextNode?: number
 }
 
+interface IDependentParameters {
+  checkInterval?: number
+  failurePolicy?: 'DEPENDENT_FAILURE_FAILURE' | 'DEPENDENT_FAILURE_WAITING'
+  failureWaitingTime?: number
+  relation?: RelationType
+  dependTaskList?: IDependTask[]
+}
+
+/*
+ * resourceName: resource full name
+ * res: resource file name
+ */
 interface ISourceItem {
-  id: number
+  id?: number
+  resourceName: string
+  res?: string
 }
 
 interface ISqoopTargetData {
@@ -186,6 +223,8 @@ interface ISparkParameters {
   executorMemory?: string
   numExecutors?: number
   others?: string
+  yarnQueue?: string
+  sqlExecutionType?: string
 }
 
 interface IRuleParameters {
@@ -197,6 +236,7 @@ interface IRuleParameters {
   operator?: string
   src_connector_type?: number
   src_datasource_id?: number
+  src_database?: string
   src_table?: string
   field_length?: number
   begin_time?: string
@@ -211,6 +251,7 @@ interface IRuleParameters {
   statistics_name?: string
   target_connector_type?: number
   target_datasource_id?: number
+  target_database?: string
   target_table?: string
   threshold?: string
   mapping_columns?: string
@@ -220,10 +261,12 @@ interface ITaskParams {
   resourceList?: ISourceItem[]
   mainJar?: ISourceItem
   localParams?: ILocalParam[]
+  runType?: string
+  jvmArgs?: string
+  isModulePath?: boolean
   rawScript?: string
   initScript?: string
   programType?: string
-  sparkVersion?: string
   flinkVersion?: string
   jobManagerMemory?: string
   taskManagerMemory?: string
@@ -251,7 +294,6 @@ interface ITaskParams {
   datasource?: string
   sql?: string
   sqlType?: string
-  segmentSeparator?: string
   sendEmail?: boolean
   displayRows?: number
   title?: string
@@ -265,6 +307,7 @@ interface ITaskParams {
   hadoopCustomParams?: ILocalParam[]
   sqoopAdvancedParams?: ILocalParam[]
   concurrency?: number
+  splitBy?: string
   modelType?: ModelType
   sourceType?: SourceType
   targetType?: SourceType
@@ -272,13 +315,11 @@ interface ITaskParams {
   sourceParams?: string
   queue?: string
   master?: string
+  masterUrl?: string
   switchResult?: ISwitchResult
   dependTaskList?: IDependTask[]
   nextNode?: number
-  dependence?: {
-    relation?: RelationType
-    dependTaskList?: IDependTask[]
-  }
+  dependence?: IDependentParameters
   customConfig?: number
   json?: string
   dsType?: string
@@ -294,10 +335,32 @@ interface ITaskParams {
   ruleId?: number
   ruleInputParameter?: IRuleParameters
   jobFlowDefineJson?: string
+  stepsDefineJson?: string
   zeppelinNoteId?: string
   zeppelinParagraphId?: string
+  zeppelinRestEndpoint?: string
+  restEndpoint?: string
+  zeppelinUsername?: string
+  username?: string
+  zeppelinPassword?: string
+  password?: string
+  zeppelinProductionNoteDirectory?: string
+  productionNoteDirectory?: string
+  hiveCliOptions?: string
+  hiveSqlScript?: string
+  hiveCliTaskExecutionType?: string
+  sqlExecutionType?: string
   noteId?: string
   paragraphId?: string
+  condaEnvName?: string
+  inputNotePath?: string
+  outputNotePath?: string
+  parameters?: string
+  kernel?: string
+  engine?: string
+  startupScript?: string
+  executionTimeout?: string
+  startTimeout?: string
   processDefinitionCode?: number
   conditionResult?: {
     successNode?: number[]
@@ -306,6 +369,84 @@ interface ITaskParams {
   udfs?: string
   connParams?: string
   targetJobName?: string
+  cluster?: string
+  namespace?: string
+  clusterNamespace?: string
+  minCpuCores?: string
+  minMemorySpace?: string
+  image?: string
+  imagePullPolicy?: string
+  command?: string
+  args?: string
+  customizedLabels?: ILabel[]
+  nodeSelectors?: IMatchExpression[]
+  algorithm?: string
+  params?: string
+  searchParams?: string
+  dataPath?: string
+  experimentName?: string
+  modelName?: string
+  mlflowTrackingUri?: string
+  mlflowJobType?: string
+  automlTool?: string
+  registerModel?: boolean
+  mlflowTaskType?: string
+  mlflowProjectRepository?: string
+  mlflowProjectVersion?: string
+  deployType?: string
+  deployPort?: string
+  deployModelKey?: string
+  cpuLimit?: string
+  memoryLimit?: string
+  zk?: string
+  zkPath?: string
+  executeMode?: string
+  useCustom?: boolean
+  runMode?: string
+  dvcTaskType?: string
+  dvcRepository?: string
+  dvcVersion?: string
+  dvcDataLocation?: string
+  dvcMessage?: string
+  dvcLoadSaveDataPath?: string
+  dvcStoreUrl?: string
+  address?: string
+  taskId?: string
+  online?: boolean
+  sagemakerRequestJson?: string
+  script?: string
+  scriptParams?: string
+  pythonPath?: string
+  isCreateEnvironment?: string
+  pythonCommand?: string
+  pythonEnvTool?: string
+  requirements?: string
+  condaPythonVersion?: string
+  isRestartTask?: boolean
+  isJsonFormat?: boolean
+  jsonData?: string
+  migrationType?: string
+  replicationTaskIdentifier?: string
+  sourceEndpointArn?: string
+  targetEndpointArn?: string
+  replicationInstanceArn?: string
+  tableMappings?: string
+  replicationTaskArn?: string
+  jsonFormat?: boolean
+  destinationLocationArn?: string
+  sourceLocationArn?: string
+  name?: string
+  cloudWatchLogGroupArn?: string
+  yamlContent?: string
+  paramScript?: ILocalParam[]
+  factoryName?: string
+  resourceGroupName?: string
+  pipelineName?: string
+  maxNumOfSubWorkflowInstances?: number
+  degreeOfParallelism?: number
+  filterCondition?: string
+  listParameters?: Array<any>
+  yarnQueue?: string
 }
 
 interface INodeData
@@ -323,6 +464,7 @@ interface INodeData
     >,
     ISqoopTargetData,
     ISqoopSourceData,
+    IDependentParameters,
     Omit<IRuleParameters, 'mapping_columns'> {
   id?: string
   taskType?: ITaskType
@@ -332,7 +474,10 @@ interface INodeData
   environmentCode?: number | null
   failRetryInterval?: number
   failRetryTimes?: number
+  cpuQuota?: number
+  memoryMax?: number
   flag?: 'YES' | 'NO'
+  isCache?: boolean
   taskGroupId?: number
   taskGroupPriority?: number
   taskPriority?: string
@@ -345,12 +490,11 @@ interface INodeData
   preTasks?: number[]
   preTaskOptions?: []
   postTaskOptions?: []
-  resourceList?: number[]
-  mainJar?: number
+  resourceList?: string[]
+  mainJar?: string
   timeoutSetting?: boolean
   isCustomTask?: boolean
   method?: string
-  masterUrl?: string
   resourceFiles?: { id: number; fullName: string }[] | null
   relation?: RelationType
   definition?: object
@@ -359,15 +503,17 @@ interface INodeData
   udfs?: string[]
   customConfig?: boolean
   mapping_columns?: object[]
+  taskExecuteType?: TaskExecuteType
 }
 
 interface ITaskData
   extends Omit<
     INodeData,
-    'timeoutFlag' | 'taskPriority' | 'timeoutNotifyStrategy'
+    'isCache' | 'timeoutFlag' | 'taskPriority' | 'timeoutNotifyStrategy'
   > {
   name?: string
   taskPriority?: string
+  isCache?: 'YES' | 'NO'
   timeoutFlag?: 'OPEN' | 'CLOSE'
   timeoutNotifyStrategy?: string | []
   taskParams?: ITaskParams
@@ -382,17 +528,21 @@ export {
   INodeData,
   ITaskParams,
   IOption,
+  IRenderOption,
   IDataBase,
   ModelType,
   SourceType,
   ISqoopSourceParams,
   ISqoopTargetParams,
   IDependTask,
-  IDependpendItem,
+  IDependentItem,
+  IDependentItemOptions,
+  IDependTaskOptions,
   IFormItem,
   IJsonItem,
   FormRules,
   IJsonItemParams,
   IResponseJsonItem,
-  IDateType
+  IDateType,
+  IDependentParameters
 }

@@ -39,9 +39,9 @@ public class FlinkParameters extends AbstractParameters {
     private String mainClass;
 
     /**
-     * deploy mode  yarn-cluster yarn-local
+     * deploy mode  yarn-cluster yarn-local yarn-application
      */
-    private String deployMode;
+    private FlinkDeployMode deployMode;
 
     /**
      * arguments
@@ -86,7 +86,7 @@ public class FlinkParameters extends AbstractParameters {
     /**
      * The YARN queue to submit to
      */
-    private String queue;
+    private String yarnQueue;
 
     /**
      * other arguments
@@ -130,11 +130,11 @@ public class FlinkParameters extends AbstractParameters {
         this.mainClass = mainClass;
     }
 
-    public String getDeployMode() {
+    public FlinkDeployMode getDeployMode() {
         return deployMode;
     }
 
-    public void setDeployMode(String deployMode) {
+    public void setDeployMode(FlinkDeployMode deployMode) {
         this.deployMode = deployMode;
     }
 
@@ -194,12 +194,12 @@ public class FlinkParameters extends AbstractParameters {
         this.taskManagerMemory = taskManagerMemory;
     }
 
-    public String getQueue() {
-        return queue;
+    public String getYarnQueue() {
+        return yarnQueue;
     }
 
-    public void setQueue(String queue) {
-        this.queue = queue;
+    public void setYarnQueue(String yarnQueue) {
+        this.yarnQueue = yarnQueue;
     }
 
     public List<ResourceInfo> getResourceList() {

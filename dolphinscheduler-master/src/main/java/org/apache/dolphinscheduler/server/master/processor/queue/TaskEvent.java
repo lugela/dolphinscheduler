@@ -18,19 +18,24 @@
 package org.apache.dolphinscheduler.server.master.processor.queue;
 
 import org.apache.dolphinscheduler.common.enums.TaskEventType;
-import org.apache.dolphinscheduler.plugin.task.api.enums.ExecutionStatus;
-import org.apache.dolphinscheduler.remote.command.TaskExecuteResultCommand;
-import org.apache.dolphinscheduler.remote.command.TaskExecuteRunningCommand;
+import org.apache.dolphinscheduler.common.utils.DateUtils;
+import org.apache.dolphinscheduler.plugin.task.api.enums.TaskExecutionStatus;
+import org.apache.dolphinscheduler.remote.command.task.TaskExecuteResultMessage;
+import org.apache.dolphinscheduler.remote.command.task.TaskExecuteRunningMessage;
+import org.apache.dolphinscheduler.remote.command.task.TaskUpdateRuntimeMessage;
 
 import java.util.Date;
 
-import io.netty.channel.Channel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import io.netty.channel.Channel;
 
-/**
- * task event
- */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TaskEvent {
 
     /**
@@ -46,7 +51,7 @@ public class TaskEvent {
     /**
      * state
      */
-    private ExecutionStatus state;
+    private TaskExecutionStatus state;
 
     /**
      * start time
@@ -88,6 +93,8 @@ public class TaskEvent {
      */
     private String varPool;
 
+    private int cacheTaskInstanceId;
+
     /**
      * channel
      */
@@ -104,29 +111,30 @@ public class TaskEvent {
         return event;
     }
 
-    public static TaskEvent newRunningEvent(TaskExecuteRunningCommand command, Channel channel, String workerAddress) {
+    public static TaskEvent newRunningEvent(TaskExecuteRunningMessage command, Channel channel, String workerAddress) {
         TaskEvent event = new TaskEvent();
         event.setProcessInstanceId(command.getProcessInstanceId());
         event.setTaskInstanceId(command.getTaskInstanceId());
-        event.setState(ExecutionStatus.of(command.getStatus()));
-        event.setStartTime(command.getStartTime());
+        event.setState(command.getStatus());
+        event.setStartTime(DateUtils.timeStampToDate(command.getStartTime()));
         event.setExecutePath(command.getExecutePath());
         event.setLogPath(command.getLogPath());
+        event.setAppIds(command.getAppIds());
         event.setChannel(channel);
         event.setWorkerAddress(workerAddress);
         event.setEvent(TaskEventType.RUNNING);
         return event;
     }
 
-    public static TaskEvent newResultEvent(TaskExecuteResultCommand command, Channel channel, String workerAddress) {
+    public static TaskEvent newResultEvent(TaskExecuteResultMessage command, Channel channel, String workerAddress) {
         TaskEvent event = new TaskEvent();
         event.setProcessInstanceId(command.getProcessInstanceId());
         event.setTaskInstanceId(command.getTaskInstanceId());
-        event.setState(ExecutionStatus.of(command.getStatus()));
-        event.setStartTime(command.getStartTime());
+        event.setState(TaskExecutionStatus.of(command.getStatus()));
+        event.setStartTime(DateUtils.timeStampToDate(command.getStartTime()));
         event.setExecutePath(command.getExecutePath());
         event.setLogPath(command.getLogPath());
-        event.setEndTime(command.getEndTime());
+        event.setEndTime(DateUtils.timeStampToDate(command.getEndTime()));
         event.setProcessId(command.getProcessId());
         event.setAppIds(command.getAppIds());
         event.setVarPool(command.getVarPool());
@@ -136,4 +144,24 @@ public class TaskEvent {
         return event;
     }
 
+    public static TaskEvent newCacheEvent(int processInstanceId, int taskInstanceId, int cacheTaskInstanceId) {
+        TaskEvent event = new TaskEvent();
+        event.setProcessInstanceId(processInstanceId);
+        event.setTaskInstanceId(taskInstanceId);
+        event.setCacheTaskInstanceId(cacheTaskInstanceId);
+        event.setEvent(TaskEventType.CACHE);
+        return event;
+    }
+
+    public static TaskEvent newUpdatePidEvent(TaskUpdateRuntimeMessage command, Channel channel, String workerAddress) {
+        TaskEvent event = new TaskEvent();
+        event.setProcessInstanceId(command.getProcessInstanceId());
+        event.setTaskInstanceId(command.getTaskInstanceId());
+        event.setStartTime(DateUtils.timeStampToDate(command.getStartTime()));
+        event.setLogPath(command.getLogPath());
+        event.setChannel(channel);
+        event.setWorkerAddress(workerAddress);
+        event.setEvent(TaskEventType.UPDATE_PID);
+        return event;
+    }
 }

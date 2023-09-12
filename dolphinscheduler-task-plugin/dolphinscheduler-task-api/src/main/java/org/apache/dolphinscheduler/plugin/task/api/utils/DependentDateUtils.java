@@ -17,8 +17,8 @@
 
 package org.apache.dolphinscheduler.plugin.task.api.utils;
 
+import org.apache.dolphinscheduler.common.utils.DateUtils;
 import org.apache.dolphinscheduler.plugin.task.api.model.DateInterval;
-import org.apache.dolphinscheduler.spi.utils.DateUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -179,7 +179,7 @@ public class DependentDateUtils {
      */
     public static List<DateInterval> getLastWeekOneDayInterval(Date businessDate, int dayOfWeek) {
         Date mondayThisWeek = DateUtils.getMonday(businessDate);
-        Date sunday = DateUtils.getSomeDay(mondayThisWeek, - 1);
+        Date sunday = DateUtils.getSomeDay(mondayThisWeek, -1);
         Date monday = DateUtils.getMonday(sunday);
         Date destDay = DateUtils.getSomeDay(monday, dayOfWeek - 1);
         return getDateIntervalListBetweenTwoDates(destDay, destDay);

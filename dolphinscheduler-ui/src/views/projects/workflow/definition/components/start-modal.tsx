@@ -23,10 +23,11 @@ import {
   onMounted,
   ref,
   watch,
+  getCurrentInstance,
   computed
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from "vue-router"
+import { useRoute } from 'vue-router'
 import Modal from '@/components/modal'
 import { useForm } from './use-form'
 import { useModal } from './use-modal'
@@ -42,7 +43,8 @@ import {
   NSelect,
   NSwitch,
   NCheckbox,
-  NDatePicker
+  NDatePicker,
+  NRadioButton
 } from 'naive-ui'
 import {
   ArrowDownOutlined,
@@ -80,6 +82,7 @@ export default defineComponent({
       variables,
       handleStartDefinition,
       getWorkerGroups,
+      getTenantList,
       getAlertGroups,
       getEnvironmentList,
       getStartParamsList
@@ -90,7 +93,7 @@ export default defineComponent({
     }
 
     const handleStart = () => {
-      handleStartDefinition(props.row.code)
+      handleStartDefinition(props.row.code, props.row.version)
     }
 
     const generalWarningTypeListOptions = () => [
@@ -145,7 +148,9 @@ export default defineComponent({
       }
     ]
 
-    const showTaskDependType = computed(() => route.name === 'workflow-definition-detail')
+    const showTaskDependType = computed(
+      () => route.name === 'workflow-definition-detail'
+    )
 
     const renderLabel = (option: any) => {
       return [
@@ -187,8 +192,11 @@ export default defineComponent({
       variables.startParamsList.splice(index, 1)
     }
 
+    const trim = getCurrentInstance()?.appContext.config.globalProperties.trim
+
     onMounted(() => {
       getWorkerGroups()
+      getTenantList()
       getAlertGroups()
       getEnvironmentList()
     })
@@ -219,7 +227,8 @@ export default defineComponent({
       updateParamsList,
       ...toRefs(variables),
       ...toRefs(startState),
-      ...toRefs(props)
+      ...toRefs(props),
+      trim
     }
   },
 
@@ -233,7 +242,7 @@ export default defineComponent({
         onConfirm={this.handleStart}
         confirmLoading={this.saving}
       >
-        <NForm ref='startFormRef'>
+        <NForm ref='startFormRef' model={this.startForm} rules={this.rules}>
           <NFormItem
             label={t('project.workflow.workflow_name')}
             path='workflow_name'
@@ -262,13 +271,19 @@ export default defineComponent({
             >
               <NRadioGroup v-model:value={this.startForm.taskDependType}>
                 <NSpace>
-                  <NRadio value='TASK_POST'>{t('project.workflow.backward_execution')}</NRadio>
-                  <NRadio value='TASK_PRE'>{t('project.workflow.forward_execution')}</NRadio>
-                  <NRadio value='TASK_ONLY'>{t('project.workflow.current_node_execution')}</NRadio>
+                  <NRadio value='TASK_POST'>
+                    {t('project.workflow.backward_execution')}
+                  </NRadio>
+                  <NRadio value='TASK_PRE'>
+                    {t('project.workflow.forward_execution')}
+                  </NRadio>
+                  <NRadio value='TASK_ONLY'>
+                    {t('project.workflow.current_node_execution')}
+                  </NRadio>
                 </NSpace>
               </NRadioGroup>
-            </NFormItem>)
-          }
+            </NFormItem>
+          )}
           <NFormItem
             label={t('project.workflow.notification_strategy')}
             path='warningType'
@@ -299,6 +314,16 @@ export default defineComponent({
             />
           </NFormItem>
           <NFormItem
+            label={t('project.workflow.tenant_code')}
+            path='tenantCode'
+          >
+            <NSelect
+              options={this.tenantList}
+              v-model:value={this.startForm.tenantCode}
+            />
+          </NFormItem>
+
+          <NFormItem
             label={t('project.workflow.environment_name')}
             path='environmentCode'
           >
@@ -310,17 +335,19 @@ export default defineComponent({
               clearable
             />
           </NFormItem>
-          <NFormItem
-            label={t('project.workflow.alarm_group')}
-            path='warningGroupId'
-          >
-            <NSelect
-              options={this.alertGroups}
-              placeholder={t('project.workflow.please_choose')}
-              v-model:value={this.startForm.warningGroupId}
-              clearable
-            />
-          </NFormItem>
+          {this.startForm.warningType !== 'NONE' && (
+            <NFormItem
+              label={t('project.workflow.alarm_group')}
+              path='warningGroupId'
+            >
+              <NSelect
+                options={this.alertGroups}
+                placeholder={t('project.workflow.please_choose')}
+                v-model:value={this.startForm.warningGroupId}
+                clearable
+              />
+            </NFormItem>
+          )}
           <NFormItem
             label={t('project.workflow.complement_data')}
             path='complement_data'
@@ -335,12 +362,14 @@ export default defineComponent({
           </NFormItem>
           {this.startForm.execType &&
             this.startForm.execType !== 'START_PROCESS' && (
-              <NSpace>
+              <NSpace vertical class={styles['width-100']}>
                 <NFormItem
                   label={t('project.workflow.mode_of_dependent')}
                   path='complementDependentMode'
                 >
-                  <NRadioGroup v-model:value={this.startForm.complementDependentMode}>
+                  <NRadioGroup
+                    v-model:value={this.startForm.complementDependentMode}
+                  >
                     <NSpace>
                       <NRadio value={'OFF_MODE'}>
                         {t('project.workflow.close')}
@@ -351,6 +380,25 @@ export default defineComponent({
                     </NSpace>
                   </NRadioGroup>
                 </NFormItem>
+                {this.startForm.complementDependentMode === 'ALL_DEPENDENT' && (
+                  <NFormItem
+                    label={t('project.workflow.all_level_dependent')}
+                    path='allLevelDependent'
+                  >
+                    <NRadioGroup
+                      v-model:value={this.startForm.allLevelDependent}
+                    >
+                      <NSpace>
+                        <NRadio value={'false'}>
+                          {t('project.workflow.close')}
+                        </NRadio>
+                        <NRadio value={'true'}>
+                          {t('project.workflow.open')}
+                        </NRadio>
+                      </NSpace>
+                    </NRadioGroup>
+                  </NFormItem>
+                )}
                 <NFormItem
                   label={t('project.workflow.mode_of_execution')}
                   path='runMode'
@@ -375,6 +423,7 @@ export default defineComponent({
                       {t('project.workflow.custom_parallelism')}
                     </NCheckbox>
                     <NInput
+                      allowInput={this.trim}
                       disabled={!this.parallelismRef}
                       placeholder={t(
                         'project.workflow.please_enter_parallelism'
@@ -384,15 +433,58 @@ export default defineComponent({
                   </NFormItem>
                 )}
                 <NFormItem
-                  label={t('project.workflow.schedule_date')}
-                  path='startEndTime'
+                    label={t('project.workflow.order_of_execution')}
+                    path='executionOrder'
                 >
-                  <NDatePicker
-                    type='datetimerange'
-                    clearable
-                    v-model:value={this.startForm.startEndTime}
-                    placement='top'
-                  />
+                  <NRadioGroup v-model:value={this.startForm.executionOrder}>
+                    <NSpace>
+                      <NRadio value={'DESC_ORDER'}>
+                        {t('project.workflow.descending_order')}
+                      </NRadio>
+                      <NRadio value={'ASC_ORDER'}>
+                        {t('project.workflow.ascending_order')}
+                      </NRadio>
+                    </NSpace>
+                  </NRadioGroup>
+                </NFormItem>
+                <NFormItem
+                  label={t('project.workflow.schedule_date')}
+                  path={
+                    this.startForm.dataDateType === 1
+                      ? 'startEndTime'
+                      : 'scheduleTime'
+                  }
+                >
+                  <NSpace vertical class={styles['width-100']}>
+                    <NRadioGroup
+                      name='data-date'
+                      v-model:value={this.startForm.dataDateType}
+                    >
+                      {[
+                        { label: t('project.workflow.select_date'), value: 1 },
+                        { label: t('project.workflow.enter_date'), value: 2 }
+                      ].map((item) => (
+                        <NRadioButton {...item} key={item.value} />
+                      ))}
+                    </NRadioGroup>
+
+                    {this.startForm.dataDateType === 1 ? (
+                      <NDatePicker
+                        type='datetimerange'
+                        clearable
+                        v-model:value={this.startForm.startEndTime}
+                        placement='top'
+                      />
+                    ) : (
+                      <NInput
+                        allowInput={this.trim}
+                        clearable
+                        type='textarea'
+                        v-model:value={this.startForm.scheduleTime}
+                        placeholder={t('project.workflow.schedule_date_tips')}
+                      />
+                    )}
+                  </NSpace>
                 </NFormItem>
               </NSpace>
             )}
@@ -411,6 +503,7 @@ export default defineComponent({
                 {this.startParamsList.map((item, index) => (
                   <NSpace class={styles.startup} key={Date.now() + index}>
                     <NInput
+                      allowInput={this.trim}
                       pair
                       separator=':'
                       placeholder={['prop', 'value']}
@@ -452,6 +545,13 @@ export default defineComponent({
               checkedValue={1}
               uncheckedValue={0}
               v-model:value={this.startForm.dryRun}
+            />
+          </NFormItem>
+          <NFormItem label={t('project.workflow.whether_test')} path='testFlag'>
+            <NSwitch
+              checkedValue={1}
+              uncheckedValue={0}
+              v-model:value={this.startForm.testFlag}
             />
           </NFormItem>
         </NForm>

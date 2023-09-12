@@ -24,12 +24,44 @@ type IDataBase =
   | 'ORACLE'
   | 'SQLSERVER'
   | 'DB2'
+  | 'VERTICA'
   | 'PRESTO'
   | 'REDSHIFT'
+  | 'ATHENA'
+  | 'TRINO'
+  | 'AZURESQL'
+  | 'STARROCKS'
+  | 'DAMENG'
+  | 'OCEANBASE'
+  | 'SSH'
+  | 'DATABEND'
+  | 'SNOWFLAKE'
+  | 'HANA'
+  | 'DORIS'
+
+type IDataBaseLabel =
+  | 'MYSQL'
+  | 'POSTGRESQL'
+  | 'HIVE'
+  | 'SPARK'
+  | 'CLICKHOUSE'
+  | 'ORACLE'
+  | 'SQLSERVER'
+  | 'DB2'
+  | 'PRESTO'
+  | 'REDSHIFT'
+  | 'ATHENA'
+  | 'TRINO'
+  | 'AZURESQL'
+  | 'STARROCKS'
+  | 'DAMENG'
+  | 'OCEANBASE'
+  | 'SSH'
 
 interface IDataSource {
   id?: number
   type?: IDataBase
+  label?: IDataBaseLabel
   name?: string
   note?: string
   host?: string
@@ -38,11 +70,19 @@ interface IDataSource {
   javaSecurityKrb5Conf?: string
   loginUserKeytabUsername?: string
   loginUserKeytabPath?: string
+  mode?: string
   userName?: string
   password?: string
+  awsRegion?: string
   database?: string
   connectType?: string
   other?: object
+  endpoint?: string
+  MSIClientId?: string
+  dbUser?: string
+  compatibleMode?: string
+  publicKey?: string
+  datawarehouse?: string
 }
 
 interface ListReq {

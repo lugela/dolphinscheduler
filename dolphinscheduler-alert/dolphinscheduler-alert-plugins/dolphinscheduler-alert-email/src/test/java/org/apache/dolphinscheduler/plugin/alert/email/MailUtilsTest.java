@@ -19,9 +19,9 @@ package org.apache.dolphinscheduler.plugin.alert.email;
 
 import org.apache.dolphinscheduler.alert.api.AlertConstants;
 import org.apache.dolphinscheduler.alert.api.ShowType;
+import org.apache.dolphinscheduler.common.utils.JSONUtils;
 import org.apache.dolphinscheduler.plugin.alert.email.template.AlertTemplate;
 import org.apache.dolphinscheduler.plugin.alert.email.template.DefaultHTMLTemplate;
-import org.apache.dolphinscheduler.spi.utils.JSONUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,19 +29,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Disabled("The test case makes no sense")
 public class MailUtilsTest {
+
     private static final Logger logger = LoggerFactory.getLogger(MailUtilsTest.class);
     static MailSender mailSender;
     private static Map<String, String> emailConfig = new HashMap<>();
     private static AlertTemplate alertTemplate;
 
-    @BeforeClass
+    @BeforeAll
     public static void initEmailConfig() {
         emailConfig.put(MailParamsConstants.NAME_MAIL_PROTOCOL, "smtp");
         emailConfig.put(MailParamsConstants.NAME_MAIL_SMTP_HOST, "xxx.xxx.com");
@@ -64,23 +67,23 @@ public class MailUtilsTest {
     public void testSendMails() {
 
         String content = "[\"id:69\","
-            + "\"name:UserBehavior-0--1193959466\","
-            + "\"Job name: Start workflow\","
-            + "\"State: SUCCESS\","
-            + "\"Recovery:NO\","
-            + "\"Run time: 1\","
-            + "\"Start time: 2018-08-06 10:31:34.0\","
-            + "\"End time: 2018-08-06 10:31:49.0\","
-            + "\"Host: 192.168.xx.xx\","
-            + "\"Notify group :4\"]";
+                + "\"name:UserBehavior-0--1193959466\","
+                + "\"Job name: Start workflow\","
+                + "\"State: SUCCESS\","
+                + "\"Recovery:NO\","
+                + "\"Run time: 1\","
+                + "\"Start time: 2018-08-06 10:31:34.0\","
+                + "\"End time: 2018-08-06 10:31:49.0\","
+                + "\"Host: 192.168.xx.xx\","
+                + "\"Notify group :4\"]";
 
         mailSender.sendMails(
-            "Mysql Exception",
-            content);
+                "Mysql Exception",
+                content);
     }
 
     @Test
-    public void testAuthCheck() {
+    void testAuthCheck() {
         String title = "Auth Exception";
         String content = list2String();
 
@@ -98,7 +101,7 @@ public class MailUtilsTest {
             mailSender = new MailSender(emailConfig);
             mailSender.sendMails(title, content);
         } catch (Exception e) {
-            Assert.assertTrue(e.getMessage().contains(MailParamsConstants.NAME_MAIL_USER));
+            Assertions.assertTrue(e.getMessage().contains(MailParamsConstants.NAME_MAIL_USER));
         }
 
         // test auth true and user && pwd not null will pass

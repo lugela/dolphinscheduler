@@ -17,28 +17,58 @@
 
 import { SearchOutlined } from '@vicons/antd'
 import {
-  NGrid,
-  NGridItem,
   NInput,
   NButton,
   NDatePicker,
   NSelect,
-  NIcon
+  NIcon,
+  NSpace,
+  NEllipsis
 } from 'naive-ui'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, getCurrentInstance, h, ref, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { format } from 'date-fns'
-import { stateType } from '@/common/common'
+import { workflowExecutionStateType } from '@/common/common'
+import { queryProcessDefinitionList } from '@/service/modules/process-definition'
+import { SelectMixedOption } from 'naive-ui/lib/select/src/interface'
+import { Router, useRouter } from 'vue-router'
+import { SelectOption } from 'naive-ui/es/select/src/interface'
 
 export default defineComponent({
   name: 'ProcessInstanceCondition',
   emits: ['handleSearch'],
   setup(props, ctx) {
+    const router: Router = useRouter()
+
     const searchValRef = ref('')
     const executorNameRef = ref('')
     const hostRef = ref('')
     const stateTypeRef = ref('')
     const startEndTimeRef = ref()
+    const projectCode = ref(
+      Number(router.currentRoute.value.params.projectCode)
+    )
+    const processDefineCodeRef = router.currentRoute.value.query
+      .processDefineCode
+      ? ref(Number(router.currentRoute.value.query.processDefineCode))
+      : ref()
+
+    const processDefinitionOptions = ref<Array<SelectMixedOption>>([])
+
+    const initProcessList = (code: number) => {
+      queryProcessDefinitionList(code).then((result: any) => {
+        result.map((item: { code: number; name: string }) => {
+          const option: SelectMixedOption = {
+            value: item.code,
+            label: () => h(NEllipsis, null, item.name),
+            filterLabel: item.name
+          }
+          processDefinitionOptions.value.push(option)
+        })
+      })
+    }
+
+    initProcessList(projectCode.value)
 
     const handleSearch = () => {
       let startDate = ''
@@ -60,8 +90,39 @@ export default defineComponent({
         host: hostRef.value,
         stateType: stateTypeRef.value,
         startDate,
-        endDate
+        endDate,
+        processDefineCode: processDefineCodeRef.value
       })
+    }
+
+    const onClearSearchVal = () => {
+      searchValRef.value = ''
+      handleSearch()
+    }
+
+    const onClearSearchHost = () => {
+      hostRef.value = ''
+      handleSearch()
+    }
+
+    const onClearSearchExecutor = () => {
+      executorNameRef.value = ''
+      handleSearch()
+    }
+
+    const trim = getCurrentInstance()?.appContext.config.globalProperties.trim
+
+    const selectFilter = (query: string, option: SelectOption) => {
+      return option.filterLabel
+        ? option.filterLabel
+            .toString()
+            .toLowerCase()
+            .includes(query.toLowerCase())
+        : false
+    }
+
+    const updateValue = (value: number) => {
+      processDefineCodeRef.value = value
     }
 
     return {
@@ -70,54 +131,86 @@ export default defineComponent({
       hostRef,
       stateTypeRef,
       startEndTimeRef,
-      handleSearch
+      handleSearch,
+      onClearSearchVal,
+      onClearSearchExecutor,
+      onClearSearchHost,
+      trim,
+      processDefinitionOptions,
+      processDefineCodeRef,
+      selectFilter,
+      updateValue
     }
   },
   render() {
     const { t } = useI18n()
-    const options = stateType(t)
+    const options = workflowExecutionStateType(t)
+    const {
+      processDefinitionOptions,
+      processDefineCodeRef,
+      selectFilter,
+      updateValue
+    } = this
+
     return (
-      <NGrid xGap={6} cols={24}>
-        <NGridItem offset={5} span={3}>
-          <NInput
-            v-model:value={this.searchValRef}
-            placeholder={t('project.workflow.name')}
-          />
-        </NGridItem>
-        <NGridItem span={3}>
-          <NInput
-            v-model:value={this.executorNameRef}
-            placeholder={t('project.workflow.executor')}
-          />
-        </NGridItem>
-        <NGridItem span={3}>
-          <NInput
-            v-model:value={this.hostRef}
-            placeholder={t('project.workflow.host')}
-          />
-        </NGridItem>
-        <NGridItem span={3}>
-          <NSelect
-            options={options}
-            defaultValue={''}
-            v-model:value={this.stateTypeRef}
-          />
-        </NGridItem>
-        <NGridItem span={6}>
-          <NDatePicker
-            type='datetimerange'
-            clearable
-            v-model:value={this.startEndTimeRef}
-          />
-        </NGridItem>
-        <NGridItem span={1}>
-          <NButton type='primary' onClick={this.handleSearch}>
-            <NIcon>
-              <SearchOutlined />
-            </NIcon>
-          </NButton>
-        </NGridItem>
-      </NGrid>
+      <NSpace justify='end'>
+        {h(NSelect, {
+          style: {
+            width: '210px'
+          },
+          size: 'small',
+          clearable: true,
+          filterable: true,
+          options: unref(processDefinitionOptions),
+          value: processDefineCodeRef,
+          filter: selectFilter,
+          onUpdateValue: (value: any) => {
+            updateValue(value)
+          }
+        })}
+        <NInput
+          allowInput={this.trim}
+          size='small'
+          v-model:value={this.searchValRef}
+          placeholder={t('project.workflow.name')}
+          clearable
+          onClear={this.onClearSearchVal}
+        />
+        <NInput
+          allowInput={this.trim}
+          size='small'
+          v-model:value={this.executorNameRef}
+          placeholder={t('project.workflow.executor')}
+          clearable
+          onClear={this.onClearSearchExecutor}
+        />
+        <NInput
+          allowInput={this.trim}
+          size='small'
+          v-model:value={this.hostRef}
+          placeholder={t('project.workflow.host')}
+          clearable
+          onClear={this.onClearSearchHost}
+        />
+        <NSelect
+          options={options}
+          size='small'
+          style={{ width: '210px' }}
+          defaultValue={''}
+          v-model:value={this.stateTypeRef}
+        />
+        <NDatePicker
+          type='datetimerange'
+          size='small'
+          clearable
+          v-model:value={this.startEndTimeRef}
+        />
+        <NButton type='primary' size='small' onClick={this.handleSearch}>
+          <NIcon>
+            <SearchOutlined />
+          </NIcon>
+        </NButton>
+      </NSpace>
     )
   }
 })

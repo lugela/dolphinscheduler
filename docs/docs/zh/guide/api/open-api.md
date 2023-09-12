@@ -22,7 +22,7 @@
 
 1. 打开 API 文档页面
 
-> 地址：http://{api server ip}:12345/dolphinscheduler/doc.html?language=zh_CN&lang=cn
+> 地址：http://{api server ip}:12345/dolphinscheduler/swagger-ui/index.html?language=zh_CN&lang=cn
 
 ![api-doc](../../../../img/new_ui/dev/open-api/api_doc.png)
 
@@ -63,5 +63,3 @@
 ![api-source01](../../../../img/new_ui/dev/open-api/api_source01.png)
 
 ![api-source02](../../../../img/new_ui/dev/open-api/api_source02.png)
-
-

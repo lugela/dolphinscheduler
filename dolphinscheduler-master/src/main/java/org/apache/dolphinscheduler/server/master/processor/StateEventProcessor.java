@@ -18,22 +18,22 @@
 package org.apache.dolphinscheduler.server.master.processor;
 
 import org.apache.dolphinscheduler.common.enums.StateEventType;
+import org.apache.dolphinscheduler.common.enums.WorkflowExecutionStatus;
 import org.apache.dolphinscheduler.common.utils.JSONUtils;
-import org.apache.dolphinscheduler.common.utils.LoggerUtils;
-import org.apache.dolphinscheduler.plugin.task.api.enums.ExecutionStatus;
-import org.apache.dolphinscheduler.remote.command.Command;
-import org.apache.dolphinscheduler.remote.command.CommandType;
-import org.apache.dolphinscheduler.remote.command.StateEventChangeCommand;
-import org.apache.dolphinscheduler.remote.processor.NettyRequestProcessor;
+import org.apache.dolphinscheduler.plugin.task.api.utils.LogUtils;
+import org.apache.dolphinscheduler.remote.command.Message;
+import org.apache.dolphinscheduler.remote.command.MessageType;
+import org.apache.dolphinscheduler.remote.command.workflow.WorkflowStateEventChangeRequest;
+import org.apache.dolphinscheduler.remote.processor.MasterRpcProcessor;
 import org.apache.dolphinscheduler.server.master.event.StateEvent;
+import org.apache.dolphinscheduler.server.master.event.TaskStateEvent;
+import org.apache.dolphinscheduler.server.master.event.WorkflowStateEvent;
 import org.apache.dolphinscheduler.server.master.processor.queue.StateEventResponseService;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.google.common.base.Preconditions;
 
 import io.netty.channel.Channel;
 
@@ -41,41 +41,58 @@ import io.netty.channel.Channel;
  * handle state event received from master/api
  */
 @Component
-public class StateEventProcessor implements NettyRequestProcessor {
-
-    private final Logger logger = LoggerFactory.getLogger(StateEventProcessor.class);
+@Slf4j
+public class StateEventProcessor implements MasterRpcProcessor {
 
     @Autowired
     private StateEventResponseService stateEventResponseService;
 
     @Override
-    public void process(Channel channel, Command command) {
-        Preconditions.checkArgument(CommandType.STATE_EVENT_REQUEST == command.getType(), String.format("invalid command type: %s", command.getType()));
-
-        StateEventChangeCommand stateEventChangeCommand = JSONUtils.parseObject(command.getBody(), StateEventChangeCommand.class);
-        StateEvent stateEvent = new StateEvent();
-        stateEvent.setKey(stateEventChangeCommand.getKey());
-        if (stateEventChangeCommand.getSourceProcessInstanceId() != stateEventChangeCommand.getDestProcessInstanceId()) {
-            stateEvent.setExecutionStatus(ExecutionStatus.RUNNING_EXECUTION);
+    public void process(Channel channel, Message message) {
+        WorkflowStateEventChangeRequest workflowStateEventChangeRequest =
+                JSONUtils.parseObject(message.getBody(), WorkflowStateEventChangeRequest.class);
+        StateEvent stateEvent;
+        if (workflowStateEventChangeRequest.getDestTaskInstanceId() == 0) {
+            stateEvent = createWorkflowStateEvent(workflowStateEventChangeRequest);
         } else {
-            stateEvent.setExecutionStatus(stateEventChangeCommand.getSourceStatus());
+            stateEvent = createTaskStateEvent(workflowStateEventChangeRequest);
         }
-        stateEvent.setProcessInstanceId(stateEventChangeCommand.getDestProcessInstanceId());
-        stateEvent.setTaskInstanceId(stateEventChangeCommand.getDestTaskInstanceId());
-        StateEventType
-            type = stateEvent.getTaskInstanceId() == 0 ? StateEventType.PROCESS_STATE_CHANGE : StateEventType.TASK_STATE_CHANGE;
-        stateEvent.setType(type);
 
-        try {
-            LoggerUtils.setWorkflowAndTaskInstanceIDMDC(stateEvent.getProcessInstanceId(),
-                stateEvent.getTaskInstanceId());
-
-            logger.info("Received state change command, event: {}", stateEvent);
+        try (
+                final LogUtils.MDCAutoClosableContext mdcAutoClosableContext = LogUtils.setWorkflowAndTaskInstanceIDMDC(
+                        stateEvent.getProcessInstanceId(), stateEvent.getTaskInstanceId())) {
+            log.info("Received state change command, event: {}", stateEvent);
             stateEventResponseService.addStateChangeEvent(stateEvent);
-        } finally {
-            LoggerUtils.removeWorkflowAndTaskInstanceIdMDC();
         }
 
+    }
+
+    @Override
+    public MessageType getCommandType() {
+        return MessageType.STATE_EVENT_REQUEST;
+    }
+
+    private TaskStateEvent createTaskStateEvent(WorkflowStateEventChangeRequest workflowStateEventChangeRequest) {
+        return TaskStateEvent.builder()
+                .processInstanceId(workflowStateEventChangeRequest.getDestProcessInstanceId())
+                .taskInstanceId(workflowStateEventChangeRequest.getDestTaskInstanceId())
+                .type(StateEventType.TASK_STATE_CHANGE)
+                .key(workflowStateEventChangeRequest.getKey())
+                .build();
+    }
+
+    private WorkflowStateEvent createWorkflowStateEvent(WorkflowStateEventChangeRequest workflowStateEventChangeRequest) {
+        WorkflowExecutionStatus workflowExecutionStatus = workflowStateEventChangeRequest.getSourceStatus();
+        if (workflowStateEventChangeRequest.getSourceProcessInstanceId() != workflowStateEventChangeRequest
+                .getDestProcessInstanceId()) {
+            workflowExecutionStatus = WorkflowExecutionStatus.RUNNING_EXECUTION;
+        }
+        return WorkflowStateEvent.builder()
+                .processInstanceId(workflowStateEventChangeRequest.getDestProcessInstanceId())
+                .type(StateEventType.PROCESS_STATE_CHANGE)
+                .status(workflowExecutionStatus)
+                .key(workflowStateEventChangeRequest.getKey())
+                .build();
     }
 
 }

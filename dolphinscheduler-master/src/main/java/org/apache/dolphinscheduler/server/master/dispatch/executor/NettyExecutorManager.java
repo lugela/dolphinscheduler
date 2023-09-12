@@ -17,31 +17,31 @@
 
 package org.apache.dolphinscheduler.server.master.dispatch.executor;
 
+import org.apache.dolphinscheduler.common.constants.Constants;
 import org.apache.dolphinscheduler.common.thread.ThreadUtils;
 import org.apache.dolphinscheduler.remote.NettyRemotingClient;
-import org.apache.dolphinscheduler.remote.command.Command;
-import org.apache.dolphinscheduler.remote.command.CommandType;
+import org.apache.dolphinscheduler.remote.command.Message;
 import org.apache.dolphinscheduler.remote.config.NettyClientConfig;
+import org.apache.dolphinscheduler.remote.processor.NettyRequestProcessor;
 import org.apache.dolphinscheduler.remote.utils.Host;
 import org.apache.dolphinscheduler.server.master.dispatch.context.ExecutionContext;
 import org.apache.dolphinscheduler.server.master.dispatch.enums.ExecutorType;
 import org.apache.dolphinscheduler.server.master.dispatch.exceptions.ExecuteException;
-import org.apache.dolphinscheduler.server.master.processor.TaskExecuteResponseProcessor;
-import org.apache.dolphinscheduler.server.master.processor.TaskExecuteRunningProcessor;
-import org.apache.dolphinscheduler.server.master.processor.TaskKillResponseProcessor;
+import org.apache.dolphinscheduler.server.master.dispatch.exceptions.WorkerGroupNotFoundException;
 import org.apache.dolphinscheduler.server.master.registry.ServerNodeManager;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -49,9 +49,8 @@ import org.springframework.stereotype.Service;
  * netty executor manager
  */
 @Service
+@Slf4j
 public class NettyExecutorManager extends AbstractExecutorManager<Boolean> {
-
-    private final Logger logger = LoggerFactory.getLogger(NettyExecutorManager.class);
 
     /**
      * server node manager
@@ -60,13 +59,7 @@ public class NettyExecutorManager extends AbstractExecutorManager<Boolean> {
     private ServerNodeManager serverNodeManager;
 
     @Autowired
-    private TaskExecuteRunningProcessor taskExecuteRunningProcessor;
-
-    @Autowired
-    private TaskKillResponseProcessor taskKillResponseProcessor;
-
-    @Autowired
-    private TaskExecuteResponseProcessor taskExecuteResponseProcessor;
+    private List<NettyRequestProcessor> nettyRequestProcessors;
 
     /**
      * netty remote client
@@ -83,7 +76,9 @@ public class NettyExecutorManager extends AbstractExecutorManager<Boolean> {
 
     @PostConstruct
     public void init() {
-        this.nettyRemotingClient.registerProcessor(CommandType.TASK_KILL_RESPONSE, taskKillResponseProcessor);
+        for (NettyRequestProcessor nettyRequestProcessor : nettyRequestProcessors) {
+            this.nettyRemotingClient.registerProcessor(nettyRequestProcessor);
+        }
     }
 
     /**
@@ -94,45 +89,33 @@ public class NettyExecutorManager extends AbstractExecutorManager<Boolean> {
      * @throws ExecuteException if error throws ExecuteException
      */
     @Override
-    public Boolean execute(ExecutionContext context) throws ExecuteException {
-
-        /**
-         *  all nodes
-         */
+    public void execute(ExecutionContext context) throws ExecuteException {
+        // all nodes
         Set<String> allNodes = getAllNodes(context);
-
-        /**
-         * fail nodes
-         */
+        // fail nodes
         Set<String> failNodeSet = new HashSet<>();
-
-        /**
-         *  build command accord executeContext
-         */
-        Command command = context.getCommand();
-
-        /**
-         * execute task host
-         */
+        // build command accord executeContext
+        Message message = context.getMessage();
+        // execute task host
         Host host = context.getHost();
-        boolean success = false;
-        while (!success) {
+        for (int i = 0; i < allNodes.size(); i++) {
             try {
-                doExecute(host, command);
-                success = true;
+                doExecute(host, message);
                 context.setHost(host);
-                // We set the host to taskInstance to avoid when the worker down, this taskInstance may not be failovered, due to the taskInstance's host
+                // We set the host to taskInstance to avoid when the worker down, this taskInstance may not be
+                // failovered, due to the taskInstance's host
                 // is not belongs to the down worker ISSUE-10842.
                 context.getTaskInstance().setHost(host.getAddress());
+                return;
             } catch (ExecuteException ex) {
-                logger.error(String.format("execute command : %s error", command), ex);
+                log.error("Execute command {} error", message, ex);
                 try {
                     failNodeSet.add(host.getAddress());
                     Set<String> tmpAllIps = new HashSet<>(allNodes);
                     Collection<String> remained = CollectionUtils.subtract(tmpAllIps, failNodeSet);
-                    if (remained != null && remained.size() > 0) {
+                    if (CollectionUtils.isNotEmpty(remained)) {
                         host = Host.of(remained.iterator().next());
-                        logger.error("retry execute command : {} host : {}", command, host);
+                        log.error("retry execute command : {} host : {}", message, host);
                     } else {
                         throw new ExecuteException("fail after try all nodes");
                     }
@@ -141,42 +124,38 @@ public class NettyExecutorManager extends AbstractExecutorManager<Boolean> {
                 }
             }
         }
-
-        return success;
     }
 
     @Override
     public void executeDirectly(ExecutionContext context) throws ExecuteException {
         Host host = context.getHost();
-        doExecute(host, context.getCommand());
+        doExecute(host, context.getMessage());
     }
 
     /**
      * execute logic
      *
      * @param host host
-     * @param command command
+     * @param message command
      * @throws ExecuteException if error throws ExecuteException
      */
-    public void doExecute(final Host host, final Command command) throws ExecuteException {
-        /**
-         * retry count，default retry 3
-         */
+    public void doExecute(final Host host, final Message message) throws ExecuteException {
+        // retry count，default retry 3
         int retryCount = 3;
         boolean success = false;
         do {
             try {
-                nettyRemotingClient.send(host, command);
+                nettyRemotingClient.send(host, message);
                 success = true;
             } catch (Exception ex) {
-                logger.error(String.format("send command : %s to %s error", command, host), ex);
+                log.error("Send command to {} error, command: {}", host, message, ex);
                 retryCount--;
-                ThreadUtils.sleep(100);
+                ThreadUtils.sleep(Constants.SLEEP_TIME_MILLIS);
             }
         } while (retryCount >= 0 && !success);
 
         if (!success) {
-            throw new ExecuteException(String.format("send command : %s to %s error", command, host));
+            throw new ExecuteException(String.format("send command : %s to %s error", message, host));
         }
     }
 
@@ -186,7 +165,7 @@ public class NettyExecutorManager extends AbstractExecutorManager<Boolean> {
      * @param context context
      * @return nodes
      */
-    private Set<String> getAllNodes(ExecutionContext context) {
+    private Set<String> getAllNodes(ExecutionContext context) throws WorkerGroupNotFoundException {
         Set<String> nodes = Collections.emptySet();
         /**
          * executor type
@@ -205,7 +184,4 @@ public class NettyExecutorManager extends AbstractExecutorManager<Boolean> {
         return nodes;
     }
 
-    public NettyRemotingClient getNettyRemotingClient() {
-        return nettyRemotingClient;
-    }
 }

@@ -17,18 +17,20 @@
 
 package org.apache.dolphinscheduler.plugin.alert.feishu;
 
-import static org.apache.dolphinscheduler.spi.utils.Constants.STRING_FALSE;
-import static org.apache.dolphinscheduler.spi.utils.Constants.STRING_NO;
-import static org.apache.dolphinscheduler.spi.utils.Constants.STRING_TRUE;
-import static org.apache.dolphinscheduler.spi.utils.Constants.STRING_YES;
+import static org.apache.dolphinscheduler.common.constants.Constants.STRING_FALSE;
+import static org.apache.dolphinscheduler.common.constants.Constants.STRING_NO;
+import static org.apache.dolphinscheduler.common.constants.Constants.STRING_TRUE;
+import static org.apache.dolphinscheduler.common.constants.Constants.STRING_YES;
 
 import org.apache.dolphinscheduler.alert.api.AlertChannel;
 import org.apache.dolphinscheduler.alert.api.AlertChannelFactory;
-import org.apache.dolphinscheduler.spi.params.PasswordParam;
+import org.apache.dolphinscheduler.alert.api.AlertInputTips;
+import org.apache.dolphinscheduler.spi.params.base.DataType;
 import org.apache.dolphinscheduler.spi.params.base.ParamsOptions;
 import org.apache.dolphinscheduler.spi.params.base.PluginParams;
 import org.apache.dolphinscheduler.spi.params.base.Validate;
 import org.apache.dolphinscheduler.spi.params.input.InputParam;
+import org.apache.dolphinscheduler.spi.params.input.number.InputNumberParam;
 import org.apache.dolphinscheduler.spi.params.radio.RadioParam;
 
 import java.util.Arrays;
@@ -38,6 +40,7 @@ import com.google.auto.service.AutoService;
 
 @AutoService(AlertChannelFactory.class)
 public final class FeiShuAlertChannelFactory implements AlertChannelFactory {
+
     @Override
     public String name() {
         return "Feishu";
@@ -45,39 +48,47 @@ public final class FeiShuAlertChannelFactory implements AlertChannelFactory {
 
     @Override
     public List<PluginParams> params() {
-        InputParam webHookParam = InputParam.newBuilder(FeiShuParamsConstants.NAME_WEB_HOOK, FeiShuParamsConstants.WEB_HOOK)
-                                            .addValidate(Validate.newBuilder()
-                                                                 .setRequired(true)
-                                                                 .build())
-                                            .build();
+        InputParam webHookParam =
+                InputParam.newBuilder(FeiShuParamsConstants.NAME_WEB_HOOK, FeiShuParamsConstants.WEB_HOOK)
+                        .addValidate(Validate.newBuilder()
+                                .setRequired(true)
+                                .build())
+                        .build();
         RadioParam isEnableProxy =
-            RadioParam.newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_PROXY_ENABLE, FeiShuParamsConstants.FEI_SHU_PROXY_ENABLE)
-                      .addParamsOptions(new ParamsOptions(STRING_YES, STRING_TRUE, false))
-                      .addParamsOptions(new ParamsOptions(STRING_NO, STRING_FALSE, false))
-                      .setValue(STRING_TRUE)
-                      .addValidate(Validate.newBuilder()
-                                           .setRequired(false)
-                                           .build())
-                      .build();
+                RadioParam
+                        .newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_PROXY_ENABLE,
+                                FeiShuParamsConstants.FEI_SHU_PROXY_ENABLE)
+                        .addParamsOptions(new ParamsOptions(STRING_YES, STRING_TRUE, false))
+                        .addParamsOptions(new ParamsOptions(STRING_NO, STRING_FALSE, false))
+                        .setValue(STRING_TRUE)
+                        .addValidate(Validate.newBuilder()
+                                .setRequired(false)
+                                .build())
+                        .build();
         InputParam proxyParam =
-            InputParam.newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_PROXY, FeiShuParamsConstants.FEI_SHU_PROXY)
-                      .addValidate(Validate.newBuilder()
-                                           .setRequired(false).build())
-                      .build();
+                InputParam.newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_PROXY, FeiShuParamsConstants.FEI_SHU_PROXY)
+                        .addValidate(Validate.newBuilder()
+                                .setRequired(false).build())
+                        .build();
 
-        InputParam portParam = InputParam.newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_PORT, FeiShuParamsConstants.FEI_SHU_PORT)
-                                         .addValidate(Validate.newBuilder()
-                                                              .setRequired(false).build())
-                                         .build();
+        InputNumberParam portParam =
+                InputNumberParam.newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_PORT, FeiShuParamsConstants.FEI_SHU_PORT)
+                        .addValidate(Validate.newBuilder()
+                                .setRequired(false)
+                                .setType(DataType.NUMBER.getDataType())
+                                .build())
+                        .build();
 
         InputParam userParam =
-            InputParam.newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_USER, FeiShuParamsConstants.FEI_SHU_USER)
-                      .addValidate(Validate.newBuilder()
-                                           .setRequired(false).build())
-                      .build();
-        PasswordParam passwordParam = PasswordParam.newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_PASSWORD, FeiShuParamsConstants.FEI_SHU_PASSWORD)
-                                                   .setPlaceholder("if enable use authentication, you need input password")
-                                                   .build();
+                InputParam.newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_USER, FeiShuParamsConstants.FEI_SHU_USER)
+                        .addValidate(Validate.newBuilder()
+                                .setRequired(false).build())
+                        .build();
+        InputParam passwordParam = InputParam
+                .newBuilder(FeiShuParamsConstants.NAME_FEI_SHU_PASSWORD, FeiShuParamsConstants.FEI_SHU_PASSWORD)
+                .setPlaceholder(AlertInputTips.PASSWORD.getMsg())
+                .setType("password")
+                .build();
 
         return Arrays.asList(webHookParam, isEnableProxy, proxyParam, portParam, userParam, passwordParam);
 

@@ -42,13 +42,16 @@ export function useDataX({
     failRetryInterval: 1,
     failRetryTimes: 0,
     workerGroup: '',
+    cpuQuota: -1,
+    memoryMax: -1,
     delayTime: 0,
     timeout: 30,
     customConfig: false,
     dsType: 'MYSQL',
     dtType: 'MYSQL',
     preStatements: [],
-    postStatements: []
+    postStatements: [],
+    timeoutNotifyStrategy: ['WARN']
   } as INodeData)
 
   return {
@@ -56,12 +59,14 @@ export function useDataX({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
       Fields.useWorkerGroup(),
       Fields.useEnvironmentName(model, !data?.id),
       ...Fields.useTaskGroup(model, projectCode),
       ...Fields.useFailed(),
+      ...Fields.useResourceLimit(),
       Fields.useDelayTime(model),
       ...Fields.useTimeoutAlarm(model),
       ...Fields.useDataX(model),

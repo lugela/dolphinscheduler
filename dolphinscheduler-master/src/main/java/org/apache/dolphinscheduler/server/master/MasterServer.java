@@ -17,24 +17,25 @@
 
 package org.apache.dolphinscheduler.server.master;
 
-import org.apache.dolphinscheduler.common.Constants;
 import org.apache.dolphinscheduler.common.IStoppable;
-import org.apache.dolphinscheduler.common.thread.Stopper;
+import org.apache.dolphinscheduler.common.constants.Constants;
+import org.apache.dolphinscheduler.common.lifecycle.ServerLifeCycleManager;
 import org.apache.dolphinscheduler.common.thread.ThreadUtils;
+import org.apache.dolphinscheduler.plugin.task.api.TaskPluginManager;
+import org.apache.dolphinscheduler.scheduler.api.SchedulerApi;
 import org.apache.dolphinscheduler.server.master.registry.MasterRegistryClient;
 import org.apache.dolphinscheduler.server.master.rpc.MasterRPCServer;
+import org.apache.dolphinscheduler.server.master.rpc.MasterRpcClient;
 import org.apache.dolphinscheduler.server.master.runner.EventExecuteService;
 import org.apache.dolphinscheduler.server.master.runner.FailoverExecuteThread;
 import org.apache.dolphinscheduler.server.master.runner.MasterSchedulerBootstrap;
 import org.apache.dolphinscheduler.service.bean.SpringApplicationContext;
-import org.apache.dolphinscheduler.service.task.TaskPluginManager;
 
 import javax.annotation.PostConstruct;
 
-import org.quartz.Scheduler;
+import lombok.extern.slf4j.Slf4j;
+
 import org.quartz.SchedulerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -46,8 +47,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @ComponentScan("org.apache.dolphinscheduler")
 @EnableTransactionManagement
 @EnableCaching
+@Slf4j
 public class MasterServer implements IStoppable {
-    private static final Logger logger = LoggerFactory.getLogger(MasterServer.class);
 
     @Autowired
     private SpringApplicationContext springApplicationContext;
@@ -62,7 +63,7 @@ public class MasterServer implements IStoppable {
     private MasterSchedulerBootstrap masterSchedulerBootstrap;
 
     @Autowired
-    private Scheduler scheduler;
+    private SchedulerApi schedulerApi;
 
     @Autowired
     private EventExecuteService eventExecuteService;
@@ -72,6 +73,9 @@ public class MasterServer implements IStoppable {
 
     @Autowired
     private MasterRPCServer masterRPCServer;
+
+    @Autowired
+    private MasterRpcClient masterRpcClient;
 
     public static void main(String[] args) {
         Thread.currentThread().setName(Constants.THREAD_NAME_MASTER_SERVER);
@@ -85,25 +89,24 @@ public class MasterServer implements IStoppable {
     public void run() throws SchedulerException {
         // init rpc server
         this.masterRPCServer.start();
+        this.masterRpcClient.start();
 
         // install task plugin
-        this.taskPluginManager.installPlugin();
+        this.taskPluginManager.loadPlugin();
 
         // self tolerant
-        this.masterRegistryClient.init();
         this.masterRegistryClient.start();
         this.masterRegistryClient.setRegistryStoppable(this);
 
-        this.masterSchedulerBootstrap.init();
         this.masterSchedulerBootstrap.start();
 
         this.eventExecuteService.start();
         this.failoverExecuteThread.start();
 
-        this.scheduler.start();
+        this.schedulerApi.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (Stopper.isRunning()) {
+            if (!ServerLifeCycleManager.isStopped()) {
                 close("MasterServer shutdownHook");
             }
         }));
@@ -117,25 +120,28 @@ public class MasterServer implements IStoppable {
     public void close(String cause) {
         // set stop signal is true
         // execute only once
-        if (!Stopper.stop()) {
-            logger.warn("MasterServer is already stopped, current cause: {}", cause);
+        if (!ServerLifeCycleManager.toStopped()) {
+            log.warn("MasterServer is already stopped, current cause: {}", cause);
             return;
         }
         // thread sleep 3 seconds for thread quietly stop
         ThreadUtils.sleep(Constants.SERVER_CLOSE_WAIT_TIME.toMillis());
-        try (MasterSchedulerBootstrap closedSchedulerBootstrap = masterSchedulerBootstrap;
-             MasterRPCServer closedRpcServer = masterRPCServer;
-             MasterRegistryClient closedMasterRegistryClient = masterRegistryClient;
-             // close spring Context and will invoke method with @PreDestroy annotation to destroy beans.
-             // like ServerNodeManager,HostManager,TaskResponseService,CuratorZookeeperClient,etc
-             SpringApplicationContext closedSpringContext = springApplicationContext) {
+        try (
+                SchedulerApi closedSchedulerApi = schedulerApi;
+                MasterSchedulerBootstrap closedSchedulerBootstrap = masterSchedulerBootstrap;
+                MasterRPCServer closedRpcServer = masterRPCServer;
+                MasterRpcClient closedRpcClient = masterRpcClient;
+                MasterRegistryClient closedMasterRegistryClient = masterRegistryClient;
+                // close spring Context and will invoke method with @PreDestroy annotation to destroy beans.
+                // like ServerNodeManager,HostManager,TaskResponseService,CuratorZookeeperClient,etc
+                SpringApplicationContext closedSpringContext = springApplicationContext) {
 
-            logger.info("Master server is stopping, current cause : {}", cause);
+            log.info("Master server is stopping, current cause : {}", cause);
         } catch (Exception e) {
-            logger.error("MasterServer stop failed, current cause: {}", cause, e);
+            log.error("MasterServer stop failed, current cause: {}", cause, e);
             return;
         }
-        logger.info("MasterServer stopped, current cause: {}", cause);
+        log.info("MasterServer stopped, current cause: {}", cause);
     }
 
     @Override

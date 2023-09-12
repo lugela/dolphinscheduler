@@ -43,7 +43,9 @@ export function useEmr({
     failRetryTimes: 0,
     workerGroup: '',
     delayTime: 0,
-    timeout: 30
+    timeout: 30,
+    programType: 'ADD_JOB_FLOW_STEPS',
+    timeoutNotifyStrategy: ['WARN']
   } as INodeData)
 
   return {
@@ -51,6 +53,7 @@ export function useEmr({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
       Fields.useWorkerGroup(),

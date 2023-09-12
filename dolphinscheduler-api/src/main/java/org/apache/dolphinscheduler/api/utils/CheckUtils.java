@@ -17,11 +17,14 @@
 
 package org.apache.dolphinscheduler.api.utils;
 
+import static org.apache.dolphinscheduler.common.constants.Constants.USER_PASSWORD_MAX_LENGTH;
+import static org.apache.dolphinscheduler.common.constants.Constants.USER_PASSWORD_MIN_LENGTH;
+
 import org.apache.dolphinscheduler.api.enums.Status;
-import org.apache.dolphinscheduler.common.Constants;
+import org.apache.dolphinscheduler.common.constants.Constants;
 import org.apache.dolphinscheduler.common.utils.JSONUtils;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.text.MessageFormat;
 import java.time.ZoneId;
@@ -64,7 +67,7 @@ public class CheckUtils {
         if (!emailValidator.isValid(email, null)) {
             return false;
         }
-        //Email is at least a second-level domain name
+        // Email is at least a second-level domain name
         int indexDomain = email.lastIndexOf("@");
         String domainString = email.substring(indexDomain);
         return domainString.contains(".");
@@ -105,7 +108,16 @@ public class CheckUtils {
      * @return true if password regex valid, otherwise return false
      */
     public static boolean checkPassword(String password) {
-        return !StringUtils.isEmpty(password) && password.length() >= 2 && password.length() <= 20;
+        return !StringUtils.isEmpty(password) && checkPasswordLength(password);
+    }
+
+    /**
+     *  check password length
+     * @param password password
+     * @return true if password length valid, otherwise return false
+     */
+    public static boolean checkPasswordLength(String password) {
+        return password.length() >= USER_PASSWORD_MIN_LENGTH && password.length() <= USER_PASSWORD_MAX_LENGTH;
     }
 
     /**

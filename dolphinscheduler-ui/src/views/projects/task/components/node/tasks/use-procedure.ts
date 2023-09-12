@@ -46,7 +46,8 @@ export function useProcedure({
     timeout: 30,
     type: data?.taskParams?.type ? data?.taskParams?.type : 'MYSQL',
     datasource: data?.taskParams?.datasource,
-    method: data?.taskParams?.method
+    method: data?.taskParams?.method,
+    timeoutNotifyStrategy: ['WARN']
   } as INodeData)
 
   return {
@@ -54,6 +55,7 @@ export function useProcedure({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
       Fields.useWorkerGroup(),

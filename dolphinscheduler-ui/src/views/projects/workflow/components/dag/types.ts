@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { TaskType } from '@/views/projects/task/constants/task-type'
+import type { TaskType } from '@/store/project/types'
 export type { ITaskState } from '@/common/types'
 
 export interface ProcessDefinition {
@@ -113,6 +113,7 @@ export interface WorkflowInstance {
   failureStrategy: string
   processInstancePriority: string
   workerGroup: string
+  tenantCode: string
   warningType: string
   warningGroupId: number
 }
@@ -136,13 +137,13 @@ export interface Coordinate {
 
 export interface GlobalParam {
   key: string
+  direct: string
   value: string
 }
 
 export interface SaveForm {
   name: string
   description: string
-  tenantCode: string
   executionType: string
   timeoutFlag: boolean
   timeout: number
@@ -163,6 +164,7 @@ export interface IStartupParam {
   failureStrategy: string
   processInstancePriority: string
   workerGroup: string
+  tenantCode: string
   warningType: string
   warningGroupId: number
 }
@@ -172,3 +174,5 @@ export interface IWorkflowTaskInstance {
   taskCode: number
   taskType: string
 }
+
+export { TaskType }

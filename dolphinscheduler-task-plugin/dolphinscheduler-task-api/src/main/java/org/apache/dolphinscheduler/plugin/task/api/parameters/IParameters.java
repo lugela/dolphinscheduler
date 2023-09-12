@@ -1,4 +1,5 @@
-package org.apache.dolphinscheduler.plugin.task.api.parameters;/*
+package org.apache.dolphinscheduler.plugin.task.api.parameters;
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,6 +24,7 @@ import java.util.List;
  * job params interface
  */
 public interface IParameters {
+
     /**
      * check parameters is valid
      *

@@ -41,6 +41,8 @@ export function useSqoop({
     failRetryInterval: 1,
     failRetryTimes: 0,
     workerGroup: '',
+    cpuQuota: -1,
+    memoryMax: -1,
     delayTime: 0,
     timeout: 30,
     isCustomTask: false,
@@ -62,7 +64,9 @@ export function useSqoop({
     targetHiveCreateTable: false,
     targetHiveDropDelimiter: false,
     targetHiveOverWrite: true,
-    concurrency: 1
+    concurrency: 1,
+    splitBy: '',
+    timeoutNotifyStrategy: ['WARN']
   } as INodeData)
 
   return {
@@ -70,12 +74,14 @@ export function useSqoop({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
       Fields.useWorkerGroup(),
       Fields.useEnvironmentName(model, !data?.id),
       ...Fields.useTaskGroup(model, projectCode),
       ...Fields.useFailed(),
+      ...Fields.useResourceLimit(),
       Fields.useDelayTime(model),
       ...Fields.useTimeoutAlarm(model),
       ...Fields.useSqoop(model),

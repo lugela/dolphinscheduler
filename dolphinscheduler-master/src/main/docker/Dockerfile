@@ -15,20 +15,16 @@
 # limitations under the License.
 #
 
-FROM openjdk:8-jre-slim-buster
+FROM eclipse-temurin:8-jre
 
 ENV DOCKER true
 ENV TZ Asia/Shanghai
 ENV DOLPHINSCHEDULER_HOME /opt/dolphinscheduler
 
-RUN apt update ; \
-    apt install -y curl ; \
-    rm -rf /var/lib/apt/lists/*
-
 WORKDIR $DOLPHINSCHEDULER_HOME
 
 ADD ./target/master-server $DOLPHINSCHEDULER_HOME
 
-EXPOSE 12345
+EXPOSE 5678 5679
 
 CMD [ "/bin/bash", "./bin/start.sh" ]

@@ -32,6 +32,8 @@ interface IRecord {
   retryTimes: number
   dryRun: number
   host: string
+  appLink: string
+  testFlag?: number
 }
 
 export { ITaskState, IRecord }

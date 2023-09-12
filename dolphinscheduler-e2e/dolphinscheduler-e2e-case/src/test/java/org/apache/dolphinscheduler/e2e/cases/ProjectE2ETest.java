@@ -20,12 +20,12 @@
 package org.apache.dolphinscheduler.e2e.cases;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import org.apache.dolphinscheduler.e2e.core.DolphinScheduler;
 import org.apache.dolphinscheduler.e2e.pages.LoginPage;
 import org.apache.dolphinscheduler.e2e.pages.project.ProjectPage;
 
+import org.testcontainers.shaded.org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -40,8 +40,8 @@ class ProjectE2ETest {
     @BeforeAll
     public static void setup() {
         new LoginPage(browser)
-            .login("admin", "dolphinscheduler123")
-            .goToNav(ProjectPage.class);
+                .login("admin", "dolphinscheduler123")
+                .goToNav(ProjectPage.class);
     }
 
     @Test
@@ -56,12 +56,12 @@ class ProjectE2ETest {
         final ProjectPage page = new ProjectPage(browser);
         page.delete(project);
 
-        await().untilAsserted(() -> {
+        Awaitility.await().untilAsserted(() -> {
             browser.navigate().refresh();
             assertThat(
-                page.projectList()
+                    page.projectList()
             ).noneMatch(
-                it -> it.getText().contains(project)
+                    it -> it.getText().contains(project)
             );
         });
     }

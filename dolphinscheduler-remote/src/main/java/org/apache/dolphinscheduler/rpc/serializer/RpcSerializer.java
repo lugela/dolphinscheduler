@@ -1,4 +1,4 @@
-package org.apache.dolphinscheduler.rpc.serializer;/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,10 +15,11 @@ package org.apache.dolphinscheduler.rpc.serializer;/*
  * limitations under the License.
  */
 
+package org.apache.dolphinscheduler.rpc.serializer;
+
 import java.util.HashMap;
 
 public enum RpcSerializer {
-
 
     PROTOSTUFF((byte) 1, new ProtoStuffSerializer());
 

@@ -18,20 +18,20 @@
 package org.apache.dolphinscheduler.server.worker.message;
 
 import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
-import org.apache.dolphinscheduler.remote.command.CommandType;
-import org.apache.dolphinscheduler.remote.command.TaskExecuteRunningCommand;
+import org.apache.dolphinscheduler.remote.command.MessageType;
+import org.apache.dolphinscheduler.remote.command.task.TaskExecuteRunningMessage;
 import org.apache.dolphinscheduler.remote.exceptions.RemotingException;
 import org.apache.dolphinscheduler.remote.utils.Host;
 import org.apache.dolphinscheduler.server.worker.config.WorkerConfig;
 import org.apache.dolphinscheduler.server.worker.rpc.WorkerRpcClient;
 
+import lombok.NonNull;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import lombok.NonNull;
-
 @Component
-public class TaskExecuteRunningMessageSender implements MessageSender<TaskExecuteRunningCommand> {
+public class TaskExecuteRunningMessageSender implements MessageSender<TaskExecuteRunningMessage> {
 
     @Autowired
     private WorkerRpcClient workerRpcClient;
@@ -40,28 +40,29 @@ public class TaskExecuteRunningMessageSender implements MessageSender<TaskExecut
     private WorkerConfig workerConfig;
 
     @Override
-    public void sendMessage(TaskExecuteRunningCommand message) throws RemotingException {
+    public void sendMessage(TaskExecuteRunningMessage message) throws RemotingException {
         workerRpcClient.send(Host.of(message.getMessageReceiverAddress()), message.convert2Command());
     }
 
-    public TaskExecuteRunningCommand buildMessage(@NonNull TaskExecutionContext taskExecutionContext,
-                                                  @NonNull String messageReceiverAddress) {
-        TaskExecuteRunningCommand taskExecuteRunningMessage
-            = new TaskExecuteRunningCommand(workerConfig.getWorkerAddress(),
-                                            messageReceiverAddress,
-                                            System.currentTimeMillis());
+    @Override
+    public TaskExecuteRunningMessage buildMessage(@NonNull TaskExecutionContext taskExecutionContext) {
+        TaskExecuteRunningMessage taskExecuteRunningMessage =
+                new TaskExecuteRunningMessage(workerConfig.getWorkerAddress(),
+                        taskExecutionContext.getWorkflowInstanceHost(),
+                        System.currentTimeMillis());
         taskExecuteRunningMessage.setTaskInstanceId(taskExecutionContext.getTaskInstanceId());
         taskExecuteRunningMessage.setProcessInstanceId(taskExecutionContext.getProcessInstanceId());
-        taskExecuteRunningMessage.setStatus(taskExecutionContext.getCurrentExecutionStatus().getCode());
+        taskExecuteRunningMessage.setStatus(taskExecutionContext.getCurrentExecutionStatus());
         taskExecuteRunningMessage.setLogPath(taskExecutionContext.getLogPath());
         taskExecuteRunningMessage.setHost(taskExecutionContext.getHost());
         taskExecuteRunningMessage.setStartTime(taskExecutionContext.getStartTime());
         taskExecuteRunningMessage.setExecutePath(taskExecutionContext.getExecutePath());
+        taskExecuteRunningMessage.setAppIds(taskExecutionContext.getAppIds());
         return taskExecuteRunningMessage;
     }
 
     @Override
-    public CommandType getMessageType() {
-        return CommandType.TASK_EXECUTE_RUNNING;
+    public MessageType getMessageType() {
+        return MessageType.TASK_EXECUTE_RUNNING_MESSAGE;
     }
 }

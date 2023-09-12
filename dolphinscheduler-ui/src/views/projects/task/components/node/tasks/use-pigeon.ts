@@ -42,7 +42,8 @@ export function usePigeon({
     workerGroup: '',
     delayTime: 0,
     timeout: 30,
-    targetJobName: ''
+    targetJobName: '',
+    timeoutNotifyStrategy: ['WARN']
   } as INodeData)
 
   return {
@@ -50,6 +51,7 @@ export function usePigeon({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
       Fields.useWorkerGroup(),

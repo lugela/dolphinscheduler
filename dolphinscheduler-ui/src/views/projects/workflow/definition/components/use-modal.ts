@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import _, { cloneDeep } from 'lodash'
+import _, { cloneDeep, omit } from 'lodash'
 import { reactive, SetupContext } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -37,7 +37,8 @@ import {
 } from '@/service/modules/schedules'
 import { parseTime } from '@/common/common'
 import { EnvironmentItem } from '@/service/modules/environment/types'
-import { ITimingState } from './types'
+import { ITimingState, ProcessInstanceReq } from './types'
+import { queryTenantList } from '@/service/modules/tenants'
 
 export function useModal(
   state: any,
@@ -50,6 +51,7 @@ export function useModal(
   const variables = reactive<ITimingState>({
     projectCode: Number(route.params.projectCode),
     workerGroups: [],
+    tenantList: [],
     alertGroups: [],
     environmentList: [],
     startParamsList: [],
@@ -85,14 +87,20 @@ export function useModal(
     }
   }
 
-  const handleStartDefinition = async (code: number) => {
+  const handleStartDefinition = async (code: number, version: number) => {
     await state.startFormRef.validate()
 
     if (state.saving) return
     state.saving = true
     try {
       state.startForm.processDefinitionCode = code
-      if (state.startForm.startEndTime) {
+      state.startForm.version = version
+      const params = omit(state.startForm, [
+        'startEndTime',
+        'scheduleTime',
+        'dataDateType'
+      ]) as ProcessInstanceReq
+      if (state.startForm.dataDateType === 1) {
         const start = format(
           new Date(state.startForm.startEndTime[0]),
           'yyyy-MM-dd HH:mm:ss'
@@ -101,7 +109,14 @@ export function useModal(
           new Date(state.startForm.startEndTime[1]),
           'yyyy-MM-dd HH:mm:ss'
         )
-        state.startForm.scheduleTime = `${start},${end}`
+        params.scheduleTime = JSON.stringify({
+          complementStartDate: start,
+          complementEndDate: end
+        })
+      } else {
+        params.scheduleTime = JSON.stringify({
+          complementScheduleDateList: state.startForm.scheduleTime
+        })
       }
 
       const startParams = {} as any
@@ -110,11 +125,10 @@ export function useModal(
           startParams[item.prop] = item.value
         }
       }
-      state.startForm.startParams = !_.isEmpty(startParams)
+      params.startParams = !_.isEmpty(startParams)
         ? JSON.stringify(startParams)
         : ''
-
-      await startProcessInstance(state.startForm, variables.projectCode)
+      await startProcessInstance(params, variables.projectCode)
       window.$message.success(t('project.workflow.success'))
       state.saving = false
       ctx.emit('updateList')
@@ -207,6 +221,7 @@ export function useModal(
         ? state.timingForm.warningGroupId
         : 0,
       workerGroup: state.timingForm.workerGroup,
+      tenantCode: state.timingForm.tenantCode,
       environmentCode: state.timingForm.environmentCode
     }
     return data
@@ -217,6 +232,15 @@ export function useModal(
       variables.workerGroups = res.map((item: string) => ({
         label: item,
         value: item
+      }))
+    })
+  }
+
+  const getTenantList = () => {
+    queryTenantList().then((res: any) => {
+      variables.tenantList = res.map((item: any) => ({
+        label: item.tenantCode,
+        value: item.tenantCode
       }))
     })
   }
@@ -288,6 +312,7 @@ export function useModal(
     handleUpdateTiming,
     handleBatchCopyDefinition,
     getWorkerGroups,
+    getTenantList,
     getAlertGroups,
     getEnvironmentList,
     getStartParamsList,

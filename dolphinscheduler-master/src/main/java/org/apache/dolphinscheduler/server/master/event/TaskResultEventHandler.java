@@ -20,21 +20,23 @@ package org.apache.dolphinscheduler.server.master.event;
 import org.apache.dolphinscheduler.common.enums.StateEventType;
 import org.apache.dolphinscheduler.common.enums.TaskEventType;
 import org.apache.dolphinscheduler.dao.entity.TaskInstance;
+import org.apache.dolphinscheduler.dao.repository.TaskInstanceDao;
 import org.apache.dolphinscheduler.dao.utils.TaskInstanceUtils;
-import org.apache.dolphinscheduler.plugin.task.api.enums.ExecutionStatus;
-import org.apache.dolphinscheduler.remote.command.TaskExecuteAckCommand;
+import org.apache.dolphinscheduler.remote.command.task.TaskExecuteResultMessageAck;
 import org.apache.dolphinscheduler.server.master.cache.ProcessInstanceExecCacheManager;
 import org.apache.dolphinscheduler.server.master.config.MasterConfig;
 import org.apache.dolphinscheduler.server.master.processor.queue.TaskEvent;
 import org.apache.dolphinscheduler.server.master.runner.WorkflowExecuteRunnable;
 import org.apache.dolphinscheduler.server.master.runner.WorkflowExecuteThreadPool;
-import org.apache.dolphinscheduler.server.utils.DataQualityResultOperator;
+import org.apache.dolphinscheduler.server.master.utils.DataQualityResultOperator;
 import org.apache.dolphinscheduler.service.process.ProcessService;
 
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import io.netty.channel.Channel;
 
 @Component
 public class TaskResultEventHandler implements TaskEventHandler {
@@ -52,6 +54,9 @@ public class TaskResultEventHandler implements TaskEventHandler {
     private ProcessService processService;
 
     @Autowired
+    private TaskInstanceDao taskInstanceDao;
+
+    @Autowired
     private MasterConfig masterConfig;
 
     @Override
@@ -60,23 +65,23 @@ public class TaskResultEventHandler implements TaskEventHandler {
         int processInstanceId = taskEvent.getProcessInstanceId();
 
         WorkflowExecuteRunnable workflowExecuteRunnable = this.processInstanceExecCacheManager.getByProcessInstanceId(
-            processInstanceId);
+                processInstanceId);
         if (workflowExecuteRunnable == null) {
             sendAckToWorker(taskEvent);
             throw new TaskEventHandleError(
-                "Handle task result event error, cannot find related workflow instance from cache, will discard this event");
+                    "Handle task result event error, cannot find related workflow instance from cache, will discard this event");
         }
         Optional<TaskInstance> taskInstanceOptional = workflowExecuteRunnable.getTaskInstance(taskInstanceId);
         if (!taskInstanceOptional.isPresent()) {
             sendAckToWorker(taskEvent);
             throw new TaskEventHandleError(
-                "Handle task result event error, cannot find the taskInstance from cache, will discord this event");
+                    "Handle task result event error, cannot find the taskInstance from cache, will discord this event");
         }
         TaskInstance taskInstance = taskInstanceOptional.get();
-        if (taskInstance.getState().typeIsFinished()) {
+        if (taskInstance.getState().isFinished()) {
             sendAckToWorker(taskEvent);
             throw new TaskEventHandleError(
-                "Handle task result event error, the task instance is already finished, will discord this event");
+                    "Handle task result event error, the task instance is already finished, will discord this event");
         }
         dataQualityResultOperator.operateDqExecuteResult(taskEvent, taskInstance);
 
@@ -93,29 +98,34 @@ public class TaskResultEventHandler implements TaskEventHandler {
             taskInstance.setEndTime(taskEvent.getEndTime());
             taskInstance.setVarPool(taskEvent.getVarPool());
             processService.changeOutParam(taskInstance);
-            processService.updateTaskInstance(taskInstance);
+            taskInstanceDao.updateById(taskInstance);
             sendAckToWorker(taskEvent);
         } catch (Exception ex) {
             TaskInstanceUtils.copyTaskInstance(oldTaskInstance, taskInstance);
             throw new TaskEventHandleError("Handle task result event error, save taskInstance to db error", ex);
         }
-        StateEvent stateEvent = new StateEvent();
-        stateEvent.setProcessInstanceId(taskEvent.getProcessInstanceId());
-        stateEvent.setTaskInstanceId(taskEvent.getTaskInstanceId());
-        stateEvent.setExecutionStatus(taskEvent.getState());
-        stateEvent.setType(StateEventType.TASK_STATE_CHANGE);
+        TaskStateEvent stateEvent = TaskStateEvent.builder()
+                .processInstanceId(taskEvent.getProcessInstanceId())
+                .taskInstanceId(taskEvent.getTaskInstanceId())
+                .status(taskEvent.getState())
+                .type(StateEventType.TASK_STATE_CHANGE)
+                .build();
         workflowExecuteThreadPool.submitStateEvent(stateEvent);
 
     }
 
     public void sendAckToWorker(TaskEvent taskEvent) {
+        Channel channel = taskEvent.getChannel();
+        if (channel == null) {
+            return;
+        }
         // we didn't set the receiver address, since the ack doen's need to retry
-        TaskExecuteAckCommand taskExecuteAckMessage = new TaskExecuteAckCommand(ExecutionStatus.SUCCESS.getCode(),
-                                                                                taskEvent.getTaskInstanceId(),
-                                                                                masterConfig.getMasterAddress(),
-                                                                                taskEvent.getWorkerAddress(),
-                                                                                System.currentTimeMillis());
-        taskEvent.getChannel().writeAndFlush(taskExecuteAckMessage.convert2Command());
+        TaskExecuteResultMessageAck taskExecuteAckMessage = new TaskExecuteResultMessageAck(true,
+                taskEvent.getTaskInstanceId(),
+                masterConfig.getMasterAddress(),
+                taskEvent.getWorkerAddress(),
+                System.currentTimeMillis());
+        channel.writeAndFlush(taskExecuteAckMessage.convert2Command());
     }
 
     @Override

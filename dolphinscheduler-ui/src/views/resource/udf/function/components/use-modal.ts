@@ -36,12 +36,9 @@ export function useModal(
   const handleCreateFunc = async () => {
     submitRequest(
       async () =>
-        await createUdfFunc(
-          {
-            ...state.functionForm
-          },
-          state.functionForm.resourceId
-        )
+        await createUdfFunc({
+          ...state.functionForm
+        })
     )
   }
 
@@ -52,7 +49,6 @@ export function useModal(
           ...state.functionForm,
           id
         },
-        state.functionForm.resourceId,
         id
       )
     })
@@ -66,7 +62,7 @@ export function useModal(
 
     try {
       await serviceHandle()
-      window.$message.success(t('resource.udf.success'))
+      window.$message.success(t('resource.function.success'))
       state.saving = false
       ctx.emit('updateList')
       ctx.emit('update:show')
@@ -84,9 +80,6 @@ export function useModal(
   const filterEmptyDirectory = (list: any) => {
     for (const item of list) {
       if (item.children) {
-        if (!/\.jar$/.test(item.name)) {
-          item.disabled = true
-        }
         filterEmptyDirectory(item.children)
       }
     }
@@ -122,7 +115,7 @@ export function useModal(
 
   const getUdfList = () => {
     const { state } = useAsyncState(
-      queryResourceList({ type: 'UDF' }).then((res: any) => {
+      queryResourceList({ type: 'UDF', fullName: '' }).then((res: any) => {
         let item = res
         let item1 = _.cloneDeep(res)
 

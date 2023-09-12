@@ -17,14 +17,28 @@
 
 package org.apache.dolphinscheduler.plugin.task.api;
 
-import org.apache.dolphinscheduler.plugin.task.api.enums.ExecutionStatus;
+import org.apache.dolphinscheduler.plugin.task.api.enums.TaskExecutionStatus;
+import org.apache.dolphinscheduler.plugin.task.api.model.Property;
 import org.apache.dolphinscheduler.plugin.task.api.model.TaskAlertInfo;
 import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
+
+import java.util.Map;
+import java.util.StringJoiner;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * executive task
  */
 public abstract class AbstractTask {
+
+    protected final Logger log = LoggerFactory.getLogger(AbstractTask.class);
+
+    public String rgex = "['\"]\\$\\{(.*?)}['\"]|\\$\\{(.*?)}";
 
     /**
      * varPool string
@@ -34,7 +48,7 @@ public abstract class AbstractTask {
     /**
      * taskExecutionContext
      **/
-    TaskExecutionContext taskRequest;
+    protected TaskExecutionContext taskRequest;
 
     /**
      * SHELL process pid
@@ -42,20 +56,9 @@ public abstract class AbstractTask {
     protected int processId;
 
     /**
-     * SHELL result string
-     */
-    protected String resultString;
-
-    /**
      * other resource manager appId , for example : YARN etc
      */
     protected String appIds;
-
-
-    /**
-     * cancel
-     */
-    protected volatile boolean cancel = false;
 
     /**
      * exit code
@@ -81,26 +84,10 @@ public abstract class AbstractTask {
     public void init() {
     }
 
-    public String getPreScript() {
-        return null;
-    }
+    // todo: return TaskResult rather than store the result in Task
+    public abstract void handle(TaskCallBack taskCallBack) throws TaskException;
 
-    /**
-     * task handle
-     *
-     * @throws Exception exception
-     */
-    public abstract void handle() throws Exception;
-
-    /**
-     * cancel application
-     *
-     * @param status status
-     * @throws Exception exception
-     */
-    public void cancelApplication(boolean status) throws Exception {
-        this.cancel = status;
-    }
+    public abstract void cancel() throws TaskException;
 
     public void setVarPool(String varPool) {
         this.varPool = varPool;
@@ -123,14 +110,6 @@ public abstract class AbstractTask {
         this.exitStatusCode = exitStatusCode;
     }
 
-    public String getAppIds() {
-        return appIds;
-    }
-
-    public void setAppIds(String appIds) {
-        this.appIds = appIds;
-    }
-
     public int getProcessId() {
         return processId;
     }
@@ -139,12 +118,12 @@ public abstract class AbstractTask {
         this.processId = processId;
     }
 
-    public String getResultString() {
-        return resultString;
+    public String getAppIds() {
+        return appIds;
     }
 
-    public void setResultString(String resultString) {
-        this.resultString = resultString;
+    public void setAppIds(String appIds) {
+        this.appIds = appIds;
     }
 
     public boolean getNeedAlert() {
@@ -175,20 +154,66 @@ public abstract class AbstractTask {
      *
      * @return exit status
      */
-    public ExecutionStatus getExitStatus() {
-        ExecutionStatus status;
+    public TaskExecutionStatus getExitStatus() {
         switch (getExitStatusCode()) {
             case TaskConstants.EXIT_CODE_SUCCESS:
-                status = ExecutionStatus.SUCCESS;
-                break;
+                return TaskExecutionStatus.SUCCESS;
             case TaskConstants.EXIT_CODE_KILL:
-                status = ExecutionStatus.KILL;
-                break;
+                return TaskExecutionStatus.KILL;
             default:
-                status = ExecutionStatus.FAILURE;
-                break;
+                return TaskExecutionStatus.FAILURE;
         }
-        return status;
     }
 
+    /**
+     * log handle
+     *
+     * @param logs log list
+     */
+    public void logHandle(LinkedBlockingQueue<String> logs) {
+
+        StringJoiner joiner = new StringJoiner("\n\t");
+        while (!logs.isEmpty()) {
+            joiner.add(logs.poll());
+        }
+        log.info(" -> {}", joiner);
+    }
+
+    /**
+     * regular expressions match the contents between two specified strings
+     *
+     * @param content content
+     * @param rgex rgex
+     * @param sqlParamsMap sql params map
+     * @param paramsPropsMap params props map
+     */
+    public void setSqlParamsMap(String content, String rgex, Map<Integer, Property> sqlParamsMap,
+                                Map<String, Property> paramsPropsMap, int taskInstanceId) {
+        if (paramsPropsMap == null) {
+            return;
+        }
+
+        Pattern pattern = Pattern.compile(rgex);
+        Matcher m = pattern.matcher(content);
+        int index = 1;
+        while (m.find()) {
+
+            String paramName = m.group(1);
+            Property prop = paramsPropsMap.get(paramName);
+
+            if (prop == null) {
+                log.error(
+                        "setSqlParamsMap: No Property with paramName: {} is found in paramsPropsMap of task instance"
+                                + " with id: {}. So couldn't put Property in sqlParamsMap.",
+                        paramName, taskInstanceId);
+            } else {
+                sqlParamsMap.put(index, prop);
+                index++;
+                log.info(
+                        "setSqlParamsMap: Property with paramName: {} put in sqlParamsMap of content {} successfully.",
+                        paramName, content);
+            }
+
+        }
+    }
 }

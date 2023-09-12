@@ -43,6 +43,8 @@ export function useShell({
     failRetryInterval: 1,
     failRetryTimes: 0,
     workerGroup: '',
+    cpuQuota: -1,
+    memoryMax: -1,
     delayTime: 0,
     rawScript: ''
   } as INodeData)
@@ -52,12 +54,14 @@ export function useShell({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
       Fields.useWorkerGroup(),
       Fields.useEnvironmentName(model, !data?.id),
       ...Fields.useTaskGroup(model, projectCode),
       ...Fields.useFailed(),
+      ...Fields.useResourceLimit(),
       Fields.useDelayTime(model),
       ...Fields.useTimeoutAlarm(model),
       ...Fields.useShell(model),

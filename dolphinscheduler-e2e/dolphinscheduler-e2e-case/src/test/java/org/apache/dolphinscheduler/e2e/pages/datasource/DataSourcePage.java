@@ -25,16 +25,19 @@ import lombok.Getter;
 import org.apache.dolphinscheduler.e2e.pages.common.NavBarPage;
 
 import java.security.Key;
+import java.time.Duration;
 import java.util.List;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.FindBys;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -54,6 +57,11 @@ public class DataSourcePage extends NavBarPage implements NavBarPage.NavBarItem 
     })
     private WebElement buttonConfirm;
 
+    @FindBys({
+        @FindBy(className = "dialog-source-modal"),
+    })
+    private WebElement dataSourceModal;
+
     private final CreateDataSourceForm createDataSourceForm;
 
     public DataSourcePage(RemoteWebDriver driver) {
@@ -66,17 +74,12 @@ public class DataSourcePage extends NavBarPage implements NavBarPage.NavBarItem 
                                            String jdbcParams) {
         buttonCreateDataSource().click();
 
-        createDataSourceForm().btnDataSourceTypeDropdown().click();
+        new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.visibilityOfElementLocated(
+            new By.ByClassName("dialog-source-modal")));
 
-        new WebDriverWait(driver, 10).until(ExpectedConditions.visibilityOfElementLocated(
-                new By.ByClassName("dialog-create-data-source")));
+        dataSourceModal().findElement(By.className(dataSourceType.toUpperCase()+"-box")).click();
 
-        createDataSourceForm().selectDataSourceType()
-            .stream()
-            .filter(it -> it.getText().contains(dataSourceType.toUpperCase()))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException(String.format("No %s in data source type list", dataSourceType.toUpperCase())))
-            .click();
+        new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.textToBePresentInElement(driver.findElement(By.className("dialog-create-data-source")), dataSourceType.toUpperCase()));
 
         createDataSourceForm().inputDataSourceName().sendKeys(dataSourceName);
         createDataSourceForm().inputDataSourceDescription().sendKeys(dataSourceDescription);

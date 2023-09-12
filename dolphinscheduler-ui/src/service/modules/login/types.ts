@@ -20,8 +20,17 @@ interface LoginReq {
   userPassword: string
 }
 
-interface SessionIdRes {
+interface LoginRes {
+  securityConfigType: string
   sessionId: string
 }
 
-export { LoginReq, SessionIdRes }
+interface OAuth2Provider {
+  clientId: string,
+  redirectUri: string,
+  provider: string,
+  authorizationUri: string,
+  iconUri: string
+}
+
+export { LoginReq, LoginRes, OAuth2Provider }

@@ -63,12 +63,12 @@ def get_paths_rel_path(paths: Set[Path], rel: Path) -> Set:
 def get_docs_img_path(paths: Set[Path]) -> Set:
     """Get all img syntax from given :param:`paths` using the regexp from :param:`pattern`."""
     res = set()
-    pattern = re.compile(r"/img[\w./-]+")
+    pattern = re.compile(r"../img[\w./-]+")
     for path in paths:
         content = path.read_text()
         find = pattern.findall(content)
         if find:
-            res |= {item for item in find}
+            res |= {item.lstrip(".") for item in find}
     return res
 
 
@@ -112,8 +112,10 @@ def check() -> None:
     img_docs, img_img = check_diff_img()
     assert not img_docs and not img_img, (
         f"Images assert failed: \n"
-        f"* difference `docs` imgs to `img` is: {img_docs if img_docs else 'None'}\n"
-        f"* difference `img` imgs to `docs` is: {img_img if img_img else 'None'}\n"
+        f"* Some images use in documents but do not exists in `img` directory, please add them: "
+        f"{img_docs if img_docs else 'None'}\n"
+        f"* Some images not use in documents but exists in `img` directory, please delete them: "
+        f"{img_img if img_img else 'None'}\n"
     )
 
 
@@ -125,14 +127,19 @@ def prune() -> None:
 
 
 def dev_syntax() -> None:
-    """Check temp whether temporary do not support syntax in development."""
-    pattern = re.compile("(\\(\\.\\.[\\w./-]+\\))")
+    """Check whether directory development contain do not support syntax or not.
+
+    * It should not ref document from other document in `docs` directory
+    """
+    pattern = re.compile("(\\(\\.\\.[\\w./-]+\\.md\\))")
     dev_files_path = get_files_recurse(dev_en_dir) | get_files_recurse(dev_zh_dir)
     get_files_recurse(dev_en_dir)
     for path in dev_files_path:
         content = path.read_text()
         find = pattern.findall(content)
-        assert not find, f"File {str(path)} contain temporary not support syntax: {find}."
+        assert (
+            not find
+        ), f"File {str(path)} contain temporary not support syntax: {find}."
 
 
 def build_argparse() -> argparse.ArgumentParser:
@@ -164,7 +171,8 @@ def build_argparse() -> argparse.ArgumentParser:
     parser_prune.set_defaults(func=prune)
 
     parser_prune = subparsers.add_parser(
-        "dev-syntax", help="Check whether temporary does not support syntax in development directory."
+        "dev-syntax",
+        help="Check whether temporary does not support syntax in development directory.",
     )
     parser_prune.set_defaults(func=dev_syntax)
 

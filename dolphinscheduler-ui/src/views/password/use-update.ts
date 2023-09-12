@@ -40,7 +40,10 @@ export function useUpdate(state: any) {
         })
 
         await userStore.setSessionId('')
+        await userStore.setSecurityConfigType('')
         await userStore.setUserInfo({})
+        await userStore.setBaseResDir('')
+        await userStore.setBaseUdfDir('')
         await router.push({ path: 'login' })
       }
     })

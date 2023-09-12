@@ -1,4 +1,4 @@
-package org.apache.dolphinscheduler.plugin.task.python;/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,6 +15,8 @@ package org.apache.dolphinscheduler.plugin.task.python;/*
  * limitations under the License.
  */
 
+package org.apache.dolphinscheduler.plugin.task.python;
+
 import org.apache.dolphinscheduler.plugin.task.api.TaskChannel;
 import org.apache.dolphinscheduler.plugin.task.api.TaskChannelFactory;
 import org.apache.dolphinscheduler.spi.params.base.PluginParams;
@@ -25,6 +27,7 @@ import com.google.auto.service.AutoService;
 
 @AutoService(TaskChannelFactory.class)
 public class PythonTaskChannelFactory implements TaskChannelFactory {
+
     @Override
     public TaskChannel create() {
         return new PythonTaskChannel();

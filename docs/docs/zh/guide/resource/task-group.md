@@ -1,16 +1,16 @@
 # 任务组管理
 
-任务组主要用于控制任务实例并发，旨在控制其他资源的压力（也可以控制 Hadoop 集群压力，不过集群会有队列管控）。您可在新建任务定义时，可配置对应的任务组，并配置任务在任务组内运行的优先级。
+任务组主要用于控制任务实例并发，旨在控制其他资源的压力（也可以控制 Hadoop 集群压力，不过集群会有队列管控）。您可在新建任务定义时，可配置对应的任务组，并配置任务在任务组内运行的优先级。用户仅能查看有权限的项目对应的任务组，且仅能创建或修改具有写权限的项目对应的任务组。
 
 ### 任务组配置
 
-#### 新建任务组   
+#### 新建任务组
 
 ![taskGroup](../../../../img/new_ui/dev/resource/taskGroup.png)
 
 用户点击【资源中心】-【任务组管理】-【任务组配置】-新建任务组
 
-![create-taskGroup](../../../../img/new_ui/dev/resource/create-taskGroup.png) 
+![create-taskGroup](../../../../img/new_ui/dev/resource/create-taskGroup.png)
 
 您需要输入图片中信息，其中
 
@@ -22,11 +22,11 @@
 
 #### 查看任务组队列
 
-![view-queue](../../../../img/new_ui/dev/resource/view-queue.png) 
+![view-queue](../../../../img/new_ui/dev/resource/view-queue.png)
 
 点击按钮查看任务组使用信息
 
-![view-queue](../../../../img/new_ui/dev/resource/view-groupQueue.png) 
+![view-queue](../../../../img/new_ui/dev/resource/view-groupQueue.png)
 
 #### 任务组的使用
 
@@ -34,7 +34,7 @@
 
 我们以 shell 节点为例：
 
-![use-queue](../../../../img/new_ui/dev/resource/use-queue.png)         
+![use-queue](../../../../img/new_ui/dev/resource/use-queue.png)
 
 关于任务组的配置，您需要做的只需要配置红色框内的部分，其中：
 

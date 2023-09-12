@@ -27,12 +27,21 @@ import java.sql.SQLException;
 public interface DataSourceProcessor {
 
     /**
+     * cast JSON to relate DTO
+     *
+     * @param paramJson
+     * @return {@link BaseDataSourceParamDTO}
+     */
+    BaseDataSourceParamDTO castDatasourceParamDTO(String paramJson);
+
+    /**
      * check datasource param is valid
      */
     void checkDatasourceParam(BaseDataSourceParamDTO datasourceParam);
 
     /**
      * get Datasource Client UniqueId
+     *
      * @return UniqueId
      */
     String getDatasourceUniqueId(ConnectionParam connectionParam, DbType dbType);
@@ -87,7 +96,22 @@ public interface DataSourceProcessor {
     Connection getConnection(ConnectionParam connectionParam) throws ClassNotFoundException, SQLException, IOException;
 
     /**
+     * test connection, use for not jdbc datasource
+     *
+     * @param connectionParam connectionParam
+     * @return true if connection is valid
+     */
+    default boolean testConnection(ConnectionParam connectionParam) {
+        return false;
+    }
+
+    /**
      * @return {@link DbType}
      */
     DbType getDbType();
+
+    /**
+     * get datasource processor
+     */
+    DataSourceProcessor create();
 }

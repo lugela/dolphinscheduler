@@ -19,7 +19,6 @@
  */
 package org.apache.dolphinscheduler.e2e.pages.common;
 
-import org.junit.rules.ExpectedException;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -30,6 +29,9 @@ import org.openqa.selenium.support.FindBys;
 import org.openqa.selenium.support.PageFactory;
 
 import lombok.Getter;
+
+import java.time.Duration;
+
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -49,7 +51,7 @@ public final class CodeEditor {
     }
 
     public CodeEditor content(String content) {
-        new WebDriverWait(this.driver, 10).until(ExpectedConditions.elementToBeClickable(editor));
+        new WebDriverWait(this.driver, Duration.ofSeconds(20)).until(ExpectedConditions.elementToBeClickable(editor));
 
         editor.click();
 

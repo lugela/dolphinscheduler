@@ -15,14 +15,21 @@
  * limitations under the License.
  */
 
-import { defineComponent, PropType, toRefs, watch } from 'vue'
+import {
+  defineComponent,
+  getCurrentInstance,
+  PropType,
+  toRefs,
+  watch
+} from 'vue'
 import Modal from '@/components/modal'
 import {
   NForm,
   NFormItem,
   NInput,
   NInputGroup,
-  NInputGroupLabel
+  NInputGroupLabel,
+  NSelect
 } from 'naive-ui'
 import { useModal } from './use-modal'
 import { useI18n } from 'vue-i18n'
@@ -45,17 +52,16 @@ const K8sNamespaceModal = defineComponent({
   },
   emits: ['cancelModal', 'confirmModal'],
   setup(props, ctx) {
-    const { variables, handleValidate } = useModal(props, ctx)
+    const { variables, handleValidate, getListData } = useModal(props, ctx)
     const { t } = useI18n()
 
     const cancelModal = () => {
       if (props.statusRef === 0) {
         variables.model.namespace = ''
-        variables.model.k8s = ''
-        variables.model.tag = ''
+        variables.model.clusterCode = ''
         variables.model.limitsCpu = ''
         variables.model.limitsMemory = ''
-        variables.model.owner = ''
+        variables.model.userId = ''
       }
       ctx.emit('cancelModal', props.showModalRef)
     }
@@ -64,24 +70,31 @@ const K8sNamespaceModal = defineComponent({
       handleValidate(props.statusRef)
     }
 
+    const trim = getCurrentInstance()?.appContext.config.globalProperties.trim
+
+    watch(
+      () => props.showModalRef,
+      () => {
+        props.showModalRef && getListData()
+      }
+    )
+
     watch(
       () => props.statusRef,
       () => {
         if (props.statusRef === 0) {
           variables.model.namespace = ''
-          variables.model.k8s = ''
-          variables.model.tag = ''
+          variables.model.clusterCode = ''
           variables.model.limitsCpu = ''
           variables.model.limitsMemory = ''
-          variables.model.owner = ''
+          variables.model.userId = ''
         } else {
           variables.model.id = props.row.id
           variables.model.namespace = props.row.namespace
-          variables.model.k8s = props.row.k8s
-          variables.model.tag = props.row.tag
+          variables.model.clusterCode = props.row.clusterCode
           variables.model.limitsCpu = props.row.limitsCpu + ''
           variables.model.limitsMemory = props.row.limitsMemory + ''
-          variables.model.owner = props.row.owner
+          variables.model.userId = props.row.userId
         }
       }
     )
@@ -91,15 +104,14 @@ const K8sNamespaceModal = defineComponent({
       () => {
         variables.model.id = props.row.id
         variables.model.namespace = props.row.namespace
-        variables.model.k8s = props.row.k8s
-        variables.model.tag = props.row.tag
+        variables.model.clusterCode = props.row.clusterCode
         variables.model.limitsCpu = props.row.limitsCpu + ''
         variables.model.limitsMemory = props.row.limitsMemory + ''
-        variables.model.owner = props.row.owner
+        variables.model.userId = props.row.userId
       }
     )
 
-    return { t, ...toRefs(variables), cancelModal, confirmModal }
+    return { t, ...toRefs(variables), cancelModal, confirmModal, trim }
   },
   render() {
     const { t } = this
@@ -114,7 +126,11 @@ const K8sNamespaceModal = defineComponent({
           show={this.showModalRef}
           onCancel={this.cancelModal}
           onConfirm={this.confirmModal}
-          confirmDisabled={!this.model.namespace || !this.model.k8s}
+          confirmDisabled={
+            !this.model.namespace ||
+            this.model.clusterCode == null ||
+            this.model.clusterCode === ''
+          }
           confirmLoading={this.saving}
         >
           {{
@@ -129,23 +145,21 @@ const K8sNamespaceModal = defineComponent({
                   path='namespace'
                 >
                   <NInput
+                    allowInput={this.trim}
                     placeholder={t('security.k8s_namespace.k8s_namespace_tips')}
                     v-model={[this.model.namespace, 'value']}
+                    disabled={this.statusRef !== 0}
                   />
                 </NFormItem>
                 <NFormItem
                   label={t('security.k8s_namespace.k8s_cluster')}
-                  path='k8s'
+                  path='clusterCode'
                 >
-                  <NInput
+                  <NSelect
                     placeholder={t('security.k8s_namespace.k8s_cluster_tips')}
-                    v-model={[this.model.k8s, 'value']}
-                  />
-                </NFormItem>
-                <NFormItem label={t('security.k8s_namespace.tag')} path='tag'>
-                  <NInput
-                    placeholder={t('security.k8s_namespace.tag_tips')}
-                    v-model={[this.model.tag, 'value']}
+                    options={this.model.clusterOptions}
+                    v-model={[this.model.clusterCode, 'value']}
+                    disabled={this.statusRef !== 0}
                   />
                 </NFormItem>
                 <NFormItem
@@ -154,6 +168,7 @@ const K8sNamespaceModal = defineComponent({
                 >
                   <NInputGroup>
                     <NInput
+                      allowInput={this.trim}
                       placeholder={t('security.k8s_namespace.limit_cpu_tips')}
                       v-model={[this.model.limitsCpu, 'value']}
                     />
@@ -166,6 +181,7 @@ const K8sNamespaceModal = defineComponent({
                 >
                   <NInputGroup>
                     <NInput
+                      allowInput={this.trim}
                       placeholder={t(
                         'security.k8s_namespace.limit_memory_tips'
                       )}
@@ -173,15 +189,6 @@ const K8sNamespaceModal = defineComponent({
                     />
                     <NInputGroupLabel>GB</NInputGroupLabel>
                   </NInputGroup>
-                </NFormItem>
-                <NFormItem
-                  label={t('security.k8s_namespace.owner')}
-                  path='owner'
-                >
-                  <NInput
-                    placeholder={t('security.k8s_namespace.owner_tips')}
-                    v-model={[this.model.owner, 'value']}
-                  />
                 </NFormItem>
               </NForm>
             )

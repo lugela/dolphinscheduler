@@ -19,16 +19,16 @@ package org.apache.dolphinscheduler.server.master.processor;
 
 import org.apache.dolphinscheduler.common.enums.CacheType;
 import org.apache.dolphinscheduler.dao.entity.Tenant;
-import org.apache.dolphinscheduler.remote.command.CacheExpireCommand;
-import org.apache.dolphinscheduler.remote.command.Command;
+import org.apache.dolphinscheduler.remote.command.Message;
+import org.apache.dolphinscheduler.remote.command.cache.CacheExpireRequest;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
@@ -37,8 +37,9 @@ import io.netty.channel.Channel;
 /**
  * task ack processor test
  */
-@RunWith(PowerMockRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CacheProcessorTest {
+
     @InjectMocks
     private CacheProcessor cacheProcessor = new CacheProcessor();
 
@@ -51,7 +52,7 @@ public class CacheProcessorTest {
     @Mock
     private Cache cache;
 
-    @Before
+    @BeforeEach
     public void before() {
         Mockito.when(cacheManager.getCache(CacheType.TENANT.getCacheName())).thenReturn(cache);
     }
@@ -60,9 +61,9 @@ public class CacheProcessorTest {
     public void testProcess() {
         Tenant tenant = new Tenant();
         tenant.setId(1);
-        CacheExpireCommand cacheExpireCommand = new CacheExpireCommand(CacheType.TENANT, "1");
-        Command command = cacheExpireCommand.convert2Command();
+        CacheExpireRequest cacheExpireRequest = new CacheExpireRequest(CacheType.TENANT, "1");
+        Message message = cacheExpireRequest.convert2Command();
 
-        cacheProcessor.process(channel, command);
+        cacheProcessor.process(channel, message);
     }
 }

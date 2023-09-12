@@ -39,7 +39,10 @@ export function useDropDown() {
   const useLogout = () => {
     logout().then(() => {
       userStore.setSessionId('')
+      userStore.setSecurityConfigType('')
       userStore.setUserInfo({})
+      userStore.setBaseResDir('')
+      userStore.setBaseUdfDir('')
       cookies.remove('sessionId')
 
       router.push({ path: '/login' })

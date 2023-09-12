@@ -30,19 +30,19 @@ If release name contains chart name it will be used as a full name.
 Create default docker images' fullname.
 */}}
 {{- define "dolphinscheduler.image.fullname.master" -}}
-{{- .Values.image.registry }}/dolphinscheduler-master:{{ .Values.image.tag | default .Chart.AppVersion -}}
+{{- .Values.image.registry }}/{{ .Values.image.master }}:{{ .Values.image.tag | default .Chart.AppVersion -}}
 {{- end -}}
 {{- define "dolphinscheduler.image.fullname.worker" -}}
-{{- .Values.image.registry }}/dolphinscheduler-worker:{{ .Values.image.tag | default .Chart.AppVersion -}}
+{{- .Values.image.registry }}/{{ .Values.image.worker }}:{{ .Values.image.tag | default .Chart.AppVersion -}}
 {{- end -}}
 {{- define "dolphinscheduler.image.fullname.api" -}}
-{{- .Values.image.registry }}/dolphinscheduler-api:{{ .Values.image.tag | default .Chart.AppVersion -}}
+{{- .Values.image.registry }}/{{ .Values.image.api }}:{{ .Values.image.tag | default .Chart.AppVersion -}}
 {{- end -}}
 {{- define "dolphinscheduler.image.fullname.alert" -}}
-{{- .Values.image.registry }}/dolphinscheduler-alert-server:{{ .Values.image.tag | default .Chart.AppVersion -}}
+{{- .Values.image.registry }}/{{ .Values.image.alert }}:{{ .Values.image.tag | default .Chart.AppVersion -}}
 {{- end -}}
 {{- define "dolphinscheduler.image.fullname.tools" -}}
-{{- .Values.image.registry }}/dolphinscheduler-tools:{{ .Values.image.tag | default .Chart.AppVersion -}}
+{{- .Values.image.registry }}/{{ .Values.image.tools }}:{{ .Values.image.tag | default .Chart.AppVersion -}}
 {{- end -}}
 
 {{/*
@@ -100,11 +100,29 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}
 
 {{/*
-Create a default fully qualified zookkeeper name.
+Create a default fully qualified mysql name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+*/}}
+{{- define "dolphinscheduler.mysql.fullname" -}}
+{{- $name := default "mysql" .Values.mysql.nameOverride -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified zookeeper name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "dolphinscheduler.zookeeper.fullname" -}}
 {{- $name := default "zookeeper" .Values.zookeeper.nameOverride -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified minio name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+*/}}
+{{- define "dolphinscheduler.minio.fullname" -}}
+{{- $name := default "minio" .Values.minio.nameOverride -}}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -123,18 +141,24 @@ Create a database environment variables.
 - name: DATABASE
   {{- if .Values.postgresql.enabled }}
   value: "postgresql"
+  {{- else if .Values.mysql.enabled }}
+  value: "mysql"
   {{- else }}
   value: {{ .Values.externalDatabase.type | quote }}
   {{- end }}
 - name: SPRING_DATASOURCE_URL
   {{- if .Values.postgresql.enabled }}
-  value: jdbc:postgresql://{{ template "dolphinscheduler.postgresql.fullname" . }}:5432/{{ .Values.postgresql.postgresqlDatabase }}?characterEncoding=utf8
+  value: jdbc:postgresql://{{ template "dolphinscheduler.postgresql.fullname" . }}:5432/{{ .Values.postgresql.postgresqlDatabase }}?{{ .Values.postgresql.params }}
+  {{- else if .Values.mysql.enabled }}
+  value: jdbc:mysql://{{ template "dolphinscheduler.mysql.fullname" . }}:3306/{{ .Values.mysql.auth.database }}?{{ .Values.mysql.auth.params }}
   {{- else }}
   value: jdbc:{{ .Values.externalDatabase.type }}://{{ .Values.externalDatabase.host }}:{{ .Values.externalDatabase.port }}/{{ .Values.externalDatabase.database }}?{{ .Values.externalDatabase.params }}
   {{- end }}
 - name: SPRING_DATASOURCE_USERNAME
   {{- if .Values.postgresql.enabled }}
   value: {{ .Values.postgresql.postgresqlUsername }}
+  {{- else if .Values.mysql.enabled }}
+  value: {{ .Values.mysql.auth.username }}
   {{- else }}
   value: {{ .Values.externalDatabase.username | quote }}
   {{- end }}
@@ -144,10 +168,53 @@ Create a database environment variables.
       {{- if .Values.postgresql.enabled }}
       name: {{ template "dolphinscheduler.postgresql.fullname" . }}
       key: postgresql-password
+      {{- else if .Values.mysql.enabled }}
+      name: {{ template "dolphinscheduler.mysql.fullname" . }}
+      key: mysql-password
       {{- else }}
       name: {{ include "dolphinscheduler.fullname" . }}-externaldb
       key: database-password
       {{- end }}
+- name: SPRING_DATASOURCE_DRIVER-CLASS-NAME
+  {{- if .Values.postgresql.enabled }}
+  value: {{ .Values.postgresql.driverClassName }}
+  {{- else if .Values.mysql.enabled }}
+  value: {{ .Values.mysql.driverClassName }}
+  {{- else }}
+  value: {{ .Values.externalDatabase.driverClassName | quote }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+Create a security environment variables.
+*/}}
+{{- define "dolphinscheduler.security.env_vars" -}}
+- name: SECURITY_AUTHENTICATION_TYPE
+  value: {{ .Values.security.authentication.type | quote }}
+{{- if eq .Values.security.authentication.type "LDAP" }}
+- name: SECURITY_AUTHENTICATION_LDAP_URLS
+  value: {{ .Values.security.authentication.ldap.urls | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_BASE_DN
+  value: {{ .Values.security.authentication.ldap.basedn | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_USERNAME
+  value: {{ .Values.security.authentication.ldap.username | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_PASSWORD
+  value: {{ .Values.security.authentication.ldap.password | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_USER_ADMIN
+  value: {{ .Values.security.authentication.ldap.user.admin | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_USER_IDENTITY_ATTRIBUTE
+  value: {{ .Values.security.authentication.ldap.user.identityattribute | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_USER_EMAIL_ATTRIBUTE
+  value: {{ .Values.security.authentication.ldap.user.emailattribute | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_USER_NOT_EXIST_ACTION
+  value: {{ .Values.security.authentication.ldap.user.notexistaction | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_SSL_ENABLE
+  value: {{ .Values.security.authentication.ldap.ssl.enable | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_SSL_TRUST_STORE
+  value: {{ .Values.security.authentication.ldap.ssl.truststore | quote }}
+- name: SECURITY_AUTHENTICATION_LDAP_SSL_TRUST_STORE_PASSWORD
+  value: {{ .Values.security.authentication.ldap.ssl.truststorepassword | quote }}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -155,12 +222,26 @@ Wait for database to be ready.
 */}}
 {{- define "dolphinscheduler.database.wait-for-ready" -}}
 - name: wait-for-database
-  image: busybox:1.30
-  imagePullPolicy: IfNotPresent
+  image: {{ .Values.initImage.busybox }}
+  imagePullPolicy: {{ .Values.initImage.pullPolicy }}
 {{- if .Values.postgresql.enabled }}
   command: ['sh', '-xc', 'for i in $(seq 1 180); do nc -z -w3 {{ template "dolphinscheduler.postgresql.fullname" . }} 5432 && exit 0 || sleep 5; done; exit 1']
+{{- else if .Values.mysql.enabled }}
+  command: ['sh', '-xc', 'for i in $(seq 1 180); do nc -z -w3 {{ template "dolphinscheduler.mysql.fullname" . }} 3306 && exit 0 || sleep 5; done; exit 1']
 {{- else }}
   command: ['sh', '-xc', 'for i in $(seq 1 180); do nc -z -w3 {{ .Values.externalDatabase.host }} {{ .Values.externalDatabase.port }} && exit 0 || sleep 5; done; exit 1']
+{{- end }}
+{{- end -}}
+
+{{/*
+Wait for minio to be ready.
+*/}}
+{{- define "dolphinscheduler.minio.wait-for-ready" -}}
+{{- if .Values.minio.enabled }}
+- name: wait-for-minio
+  image: {{ .Values.initImage.busybox }}
+  imagePullPolicy: {{ .Values.initImage.pullPolicy }}
+  command: ['sh', '-xc', 'for i in $(seq 1 180); do nc -z -w3 {{ template "dolphinscheduler.minio.fullname" . }} 9000 && exit 0 || sleep 5; done; exit 1']
 {{- end }}
 {{- end -}}
 
@@ -171,28 +252,36 @@ Create a registry environment variables.
 - name: REGISTRY_TYPE
   {{- if .Values.zookeeper.enabled }}
   value: "zookeeper"
+  {{- else if .Values.etcd.enabled }}
+  value: "etcd"
   {{- else }}
   value: {{ .Values.externalRegistry.registryPluginName }}
   {{- end }}
+{{- if .Values.etcd.enabled }}
+- name: REGISTRY_ENDPOINTS
+  value: {{ .Values.etcd.endpoints }}
+- name: REGISTRY_NAMESPACE
+  value: {{ .Values.etcd.namespace }}
+- name: REGISTRY_USER
+  value: {{ .Values.etcd.user }}
+- name: REGISTRY_PASSWORD
+  value: {{ .Values.etcd.passWord }}
+- name: REGISTRY_AUTHORITY
+  value: {{ .Values.etcd.authority }}
+- name: REGISTRY_CERT_FILE
+  value: {{ .Values.etcd.ssl.certFile }}
+- name: REGISTRY_KEY_CERT_CHAIN_FILE
+  value: {{ .Values.etcd.ssl.keyCertChainFile }}
+- name: REGISTRY_KEY_FILE
+  value: {{ .Values.etcd.ssl.keyFile }}
+{{- else }}
 - name: REGISTRY_ZOOKEEPER_CONNECT_STRING
   {{- if .Values.zookeeper.enabled }}
   value: {{ template "dolphinscheduler.zookeeper.quorum" . }}
   {{- else }}
   value: {{ .Values.externalRegistry.registryServers }}
   {{- end }}
-{{- end -}}
-
-{{/*
-Create a common fs_s3a environment variables.
-*/}}
-{{- define "dolphinscheduler.fs_s3a.env_vars" -}}
-{{- if eq (default "HDFS" .Values.common.configmap.RESOURCE_STORAGE_TYPE) "S3" -}}
-- name: FS_S3A_SECRET_KEY
-  valueFrom:
-    secretKeyRef:
-      key: fs-s3a-secret-key
-      name: {{ include "dolphinscheduler.fullname" . }}-fs-s3a
-{{- end -}}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -234,5 +323,55 @@ Create a fsFileResourcePersistence volumeMount.
 {{- if .Values.common.fsFileResourcePersistence.enabled -}}
 - mountPath: {{ default "/dolphinscheduler" .Values.common.configmap.RESOURCE_UPLOAD_PATH | quote }}
   name: {{ include "dolphinscheduler.fullname" . }}-fs-file
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create a etcd ssl volume.
+*/}}
+{{- define "dolphinscheduler.etcd.ssl.volume" -}}
+{{- if .Values.etcd.ssl.enabled -}}
+- name: etcd-ssl
+  secret:
+    secretName: {{ include "dolphinscheduler.fullname" . }}-etcd-ssl
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create a etcd ssl volumeMount.
+*/}}
+{{- define "dolphinscheduler.etcd.ssl.volumeMount" -}}
+{{- if .Values.etcd.ssl.enabled -}}
+- mountPath: /opt/dolphinscheduler/{{ .Values.etcd.ssl.certFile }}
+  name: etcd-ssl
+  subPath: cert-file
+- mountPath: /opt/dolphinscheduler/{{ .Values.etcd.ssl.keyCertChainFile  }}
+  name: etcd-ssl
+  subPath: key-cert-chain-file
+- mountPath: /opt/dolphinscheduler/{{ .Values.etcd.ssl.keyFile }}
+  name: etcd-ssl
+  subPath: key-file
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create a ldap ssl volume.
+*/}}
+{{- define "dolphinscheduler.ldap.ssl.volume" -}}
+{{- if .Values.security.authentication.ldap.ssl.enable -}}
+- name: jks-file
+  secret:
+    secretName: {{ include "dolphinscheduler.fullname" . }}-ldap-ssl
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create a ldap ssl volumeMount.
+*/}}
+{{- define "dolphinscheduler.ldap.ssl.volumeMount" -}}
+{{- if .Values.security.authentication.ldap.ssl.enable -}}
+- mountPath: {{ .Values.security.authentication.ldap.ssl.truststore }}
+  name: jks-file
+  subPath: jks-file
 {{- end -}}
 {{- end -}}

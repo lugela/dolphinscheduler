@@ -20,9 +20,10 @@ package org.apache.dolphinscheduler.plugin.alert.email.template;
 import static java.util.Objects.requireNonNull;
 
 import org.apache.dolphinscheduler.alert.api.ShowType;
+import org.apache.dolphinscheduler.common.utils.JSONUtils;
 import org.apache.dolphinscheduler.plugin.alert.email.EmailConstants;
-import org.apache.dolphinscheduler.spi.utils.JSONUtils;
-import org.apache.dolphinscheduler.spi.utils.StringUtils;
+
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -31,20 +32,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONTokener;
 
-public class DefaultHTMLTemplate implements AlertTemplate {
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-    public static final Logger logger = LoggerFactory.getLogger(DefaultHTMLTemplate.class);
+@Slf4j
+public class DefaultHTMLTemplate implements AlertTemplate {
 
     @Override
     public String getMessageFromTemplate(String content, ShowType showType, boolean showAll) {
@@ -55,7 +54,8 @@ public class DefaultHTMLTemplate implements AlertTemplate {
             case TEXT:
                 return getTextTypeMessage(content);
             default:
-                throw new IllegalArgumentException(String.format("not support showType: %s in DefaultHTMLTemplate", showType));
+                throw new IllegalArgumentException(
+                        String.format("not support showType: %s in DefaultHTMLTemplate", showType));
         }
     }
 
@@ -127,7 +127,7 @@ public class DefaultHTMLTemplate implements AlertTemplate {
                     content = JSONUtils.toJsonString(Collections.singletonList(jsonNodes));
                 }
             } catch (JSONException e) {
-                logger.error("alert content is null");
+                log.error("alert content is null");
             }
             ArrayNode list = JSONUtils.parseArray(content);
             StringBuilder contents = new StringBuilder(100);

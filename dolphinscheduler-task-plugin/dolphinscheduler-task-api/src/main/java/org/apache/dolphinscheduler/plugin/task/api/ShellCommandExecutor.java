@@ -17,16 +17,6 @@
 
 package org.apache.dolphinscheduler.plugin.task.api;
 
-import org.apache.dolphinscheduler.plugin.task.api.utils.OSUtils;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
@@ -37,92 +27,10 @@ import org.slf4j.Logger;
  */
 public class ShellCommandExecutor extends AbstractCommandExecutor {
 
-    /**
-     * For Unix-like, using bash
-     */
-    private static final String SH = "bash";
-
-    /**
-     * For Windows, using cmd.exe
-     */
-    private static final String CMD = "cmd.exe";
-
-    /**
-     * constructor
-     *
-     * @param logHandler logHandler
-     * @param taskRequest taskRequest
-     * @param logger logger
-     */
     public ShellCommandExecutor(Consumer<LinkedBlockingQueue<String>> logHandler,
                                 TaskExecutionContext taskRequest,
                                 Logger logger) {
         super(logHandler, taskRequest, logger);
-    }
-
-    public ShellCommandExecutor(LinkedBlockingQueue<String> logBuffer) {
-        super(logBuffer);
-    }
-
-    @Override
-    protected String buildCommandFilePath() {
-        // command file
-        return String.format("%s/%s.%s"
-                , taskRequest.getExecutePath()
-                , taskRequest.getTaskAppId()
-                , OSUtils.isWindows() ? "bat" : "command");
-    }
-
-    /**
-     * create command file if not exists
-     *
-     * @param execCommand exec command
-     * @param commandFile command file
-     * @throws IOException io exception
-     */
-    @Override
-    protected void createCommandFileIfNotExists(String execCommand, String commandFile) throws IOException {
-        logger.info("tenantCode user:{}, task dir:{}", taskRequest.getTenantCode(),
-                taskRequest.getTaskAppId());
-
-        // create if non existence
-        if (!Files.exists(Paths.get(commandFile))) {
-            logger.info("create command file:{}", commandFile);
-
-            StringBuilder sb = new StringBuilder();
-            if (OSUtils.isWindows()) {
-                sb.append("@echo off\n");
-                sb.append("cd /d %~dp0\n");
-                if (StringUtils.isNotBlank(taskRequest.getEnvironmentConfig())) {
-                    sb.append(taskRequest.getEnvironmentConfig()).append("\n");
-                } else {
-                    if (taskRequest.getEnvFile() != null) {
-                        sb.append("call ").append(taskRequest.getEnvFile()).append("\n");
-                    }
-                }
-            } else {
-                sb.append("#!/bin/bash\n");
-                sb.append("BASEDIR=$(cd `dirname $0`; pwd)\n");
-                sb.append("cd $BASEDIR\n");
-                if (StringUtils.isNotBlank(taskRequest.getEnvironmentConfig())) {
-                    sb.append(taskRequest.getEnvironmentConfig()).append("\n");
-                } else {
-                    if (taskRequest.getEnvFile() != null) {
-                        sb.append("source ").append(taskRequest.getEnvFile()).append("\n");
-                    }
-                }
-            }
-            sb.append(execCommand);
-            logger.info("command : {}", sb);
-
-            // write data to file
-            FileUtils.writeStringToFile(new File(commandFile), sb.toString(), StandardCharsets.UTF_8);
-        }
-    }
-
-    @Override
-    protected String commandInterpreter() {
-        return OSUtils.isWindows() ? CMD : SH;
     }
 
 }

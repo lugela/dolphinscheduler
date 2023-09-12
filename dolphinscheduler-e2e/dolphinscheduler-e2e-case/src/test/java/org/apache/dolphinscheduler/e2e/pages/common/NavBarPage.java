@@ -17,6 +17,7 @@
  * under the License.
  *
  */
+
 package org.apache.dolphinscheduler.e2e.pages.common;
 
 import org.apache.dolphinscheduler.e2e.pages.datasource.DataSourcePage;
@@ -28,12 +29,13 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.FindBy;
-import org.openqa.selenium.support.FindBys;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import lombok.Getter;
+
+import java.time.Duration;
 
 @Getter
 public class NavBarPage {
@@ -62,25 +64,25 @@ public class NavBarPage {
 
     public <T extends NavBarItem> T goToNav(Class<T> nav) {
         if (nav == ProjectPage.class) {
-            new WebDriverWait(driver, 60).until(ExpectedConditions.elementToBeClickable(projectTab));
+            new WebDriverWait(driver, Duration.ofSeconds(60)).until(ExpectedConditions.elementToBeClickable(projectTab));
             projectTab.click();
             return nav.cast(new ProjectPage(driver));
         }
 
         if (nav == SecurityPage.class) {
-            new WebDriverWait(driver, 60).until(ExpectedConditions.elementToBeClickable(securityTab));
+            new WebDriverWait(driver, Duration.ofSeconds(60)).until(ExpectedConditions.elementToBeClickable(securityTab));
             securityTab.click();
             return nav.cast(new SecurityPage(driver));
         }
 
         if (nav == ResourcePage.class) {
-            new WebDriverWait(driver, 60).until(ExpectedConditions.elementToBeClickable(resourceTab));
-            resourceTab.click();
+            new WebDriverWait(driver, Duration.ofSeconds(60)).until(ExpectedConditions.elementToBeClickable(resourceTab));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", resourceTab());
             return nav.cast(new ResourcePage(driver));
         }
 
         if (nav == DataSourcePage.class) {
-            new WebDriverWait(driver, 60).until(ExpectedConditions.elementToBeClickable(dataSourceTab));
+            new WebDriverWait(driver, Duration.ofSeconds(60)).until(ExpectedConditions.elementToBeClickable(dataSourceTab));
             dataSourceTab.click();
             return nav.cast(new DataSourcePage(driver));
         }

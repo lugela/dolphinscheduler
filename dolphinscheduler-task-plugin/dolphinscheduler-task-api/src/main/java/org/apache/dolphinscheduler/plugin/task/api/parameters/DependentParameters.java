@@ -17,12 +17,13 @@
 
 package org.apache.dolphinscheduler.plugin.task.api.parameters;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.apache.dolphinscheduler.plugin.task.api.enums.DependentRelation;
 import org.apache.dolphinscheduler.plugin.task.api.model.DependentTaskModel;
 
 import java.util.List;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -30,10 +31,23 @@ public class DependentParameters extends AbstractParameters {
 
     private List<DependentTaskModel> dependTaskList;
     private DependentRelation relation;
+    /** Time unit is second */
+    private Integer checkInterval;
+    private DependentFailurePolicyEnum failurePolicy;
+    /** Time unit is minutes */
+    private Integer failureWaitingTime;
 
     @Override
     public boolean checkParameters() {
         return true;
+    }
+
+    /**
+     * the dependent task failure policy.
+     */
+    public enum DependentFailurePolicyEnum {
+        DEPENDENT_FAILURE_FAILURE,
+        DEPENDENT_FAILURE_WAITING
     }
 
 }

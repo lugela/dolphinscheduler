@@ -23,7 +23,7 @@ import org.apache.dolphinscheduler.data.quality.execution.SparkRuntimeEnvironmen
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * SparkApplicationTestBase
@@ -32,15 +32,16 @@ public class SparkApplicationTestBase {
 
     protected SparkRuntimeEnvironment sparkRuntimeEnvironment;
 
-    @Before
+    @BeforeEach
     public void init() {
-        Map<String,Object> config = new HashMap<>();
-        config.put("spark.app.name","data quality test");
-        config.put("spark.sql.crossJoin.enabled","true");
-        config.put("spark.driver.bindAddress","127.0.0.1");
-        config.put("spark.ui.port",13000);
-        config.put("spark.master","local[4]");
+        Map<String, Object> config = new HashMap<>();
+        config.put("spark.app.name", "data quality test");
+        config.put("spark.sql.crossJoin.enabled", "true");
+        config.put("spark.driver.bindAddress", "127.0.0.1");
+        config.put("spark.ui.port", 13000);
+        config.put("spark.master", "local[4]");
 
-        sparkRuntimeEnvironment = new SparkRuntimeEnvironment(new Config(config));
+        // The hive client is disabled by default, and the local execution of Unit Test is guaranteed to be successful.
+        sparkRuntimeEnvironment = new SparkRuntimeEnvironment(new Config(config), false);
     }
 }

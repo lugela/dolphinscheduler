@@ -17,51 +17,16 @@
 
 package org.apache.dolphinscheduler.plugin.datasource.api.datasource;
 
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.clickhouse.ClickHouseDataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.db2.Db2DataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.hive.HiveDataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.mysql.MySQLDataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.oracle.OracleDataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.postgresql.PostgreSQLDataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.presto.PrestoDataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.redshift.RedshiftDataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.spark.SparkDataSourceParamDTO;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.sqlserver.SQLServerDataSourceParamDTO;
+import org.apache.dolphinscheduler.common.constants.Constants;
 import org.apache.dolphinscheduler.spi.enums.DbType;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 /**
- * Basic datasource params submitted to api.
- * <p>
- * see {@link MySQLDataSourceParamDTO}
- * see {@link PostgreSQLDataSourceParamDTO}
- * see {@link HiveDataSourceParamDTO}
- * see {@link SparkDataSourceParamDTO}
- * see {@link ClickHouseDataSourceParamDTO}
- * see {@link OracleDataSourceParamDTO}
- * see {@link SQLServerDataSourceParamDTO}
- * see {@link Db2DataSourceParamDTO}
- * see {@link PrestoDataSourceParamDTO}
- * see {@link RedshiftDataSourceParamDTO}
+ * Basic datasource params submitted to api, each datasource plugin should have implementation.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes(value = {
-    @JsonSubTypes.Type(value = MySQLDataSourceParamDTO.class, name = "MYSQL"),
-    @JsonSubTypes.Type(value = PostgreSQLDataSourceParamDTO.class, name = "POSTGRESQL"),
-    @JsonSubTypes.Type(value = HiveDataSourceParamDTO.class, name = "HIVE"),
-    @JsonSubTypes.Type(value = SparkDataSourceParamDTO.class, name = "SPARK"),
-    @JsonSubTypes.Type(value = ClickHouseDataSourceParamDTO.class, name = "CLICKHOUSE"),
-    @JsonSubTypes.Type(value = OracleDataSourceParamDTO.class, name = "ORACLE"),
-    @JsonSubTypes.Type(value = SQLServerDataSourceParamDTO.class, name = "SQLSERVER"),
-    @JsonSubTypes.Type(value = Db2DataSourceParamDTO.class, name = "DB2"),
-    @JsonSubTypes.Type(value = PrestoDataSourceParamDTO.class, name = "PRESTO"),
-    @JsonSubTypes.Type(value = RedshiftDataSourceParamDTO.class, name = "REDSHIFT"),
-})
 public abstract class BaseDataSourceParamDTO implements Serializable {
 
     protected Integer id;
@@ -120,6 +85,39 @@ public abstract class BaseDataSourceParamDTO implements Serializable {
 
     public void setPort(Integer port) {
         this.port = port;
+    }
+
+    /**
+     * extract the host and port from the address,
+     * then set it
+     * @param address address like 'jdbc:mysql://host:port' or 'jdbc:hive2://zk1:port,zk2:port,zk3:port'
+     */
+    public void setHostAndPortByAddress(String address) {
+        if (address == null) {
+            throw new IllegalArgumentException("address is null.");
+        }
+        address = address.trim();
+
+        int doubleSlashIndex = address.indexOf(Constants.DOUBLE_SLASH);
+        // trim address like 'jdbc:mysql://host:port/xxx' ends with '/xxx'
+        int slashIndex = address.indexOf(Constants.SLASH, doubleSlashIndex + 2);
+        String hostPortString = slashIndex == -1 ? address.substring(doubleSlashIndex + 2)
+                : address.substring(doubleSlashIndex + 2, slashIndex);
+
+        ArrayList<String> hosts = new ArrayList<>();
+        String portString = null;
+        for (String hostPort : hostPortString.split(Constants.COMMA)) {
+            String[] parts = hostPort.split(Constants.COLON);
+            hosts.add(parts[0]);
+            if (portString == null && parts.length > 1)
+                portString = parts[1];
+        }
+        if (hosts.size() == 0 || portString == null) {
+            throw new IllegalArgumentException(String.format("host:port '%s' illegal.", hostPortString));
+        }
+
+        this.host = String.join(Constants.COMMA, hosts);
+        this.port = Integer.parseInt(portString);
     }
 
     public String getDatabase() {

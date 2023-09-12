@@ -22,8 +22,8 @@ import org.apache.dolphinscheduler.dao.entity.TaskGroup;
 
 import java.util.Date;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +53,7 @@ public class TaskGroupMapperTest extends BaseDaoTest {
         taskGroup.setUpdateTime(date);
         taskGroup.setUpdateTime(date);
 
-        int i = taskGroupMapper.insert(taskGroup);
+        taskGroupMapper.insert(taskGroup);
         return taskGroup;
     }
 
@@ -66,7 +66,7 @@ public class TaskGroupMapperTest extends BaseDaoTest {
         taskGroup.setGroupSize(100);
         taskGroup.setUpdateTime(new Date(System.currentTimeMillis()));
         int i = taskGroupMapper.updateById(taskGroup);
-        Assert.assertEquals(i, 1);
+        Assertions.assertEquals(i, 1);
     }
 
     /**
@@ -76,7 +76,7 @@ public class TaskGroupMapperTest extends BaseDaoTest {
     public void testCheckName() {
         TaskGroup taskGroup = insertOne();
         TaskGroup result = taskGroupMapper.queryByName(taskGroup.getUserId(), taskGroup.getName());
-        Assert.assertNotNull(result);
+        Assertions.assertNotNull(result);
     }
 
     /**
@@ -88,9 +88,8 @@ public class TaskGroupMapperTest extends BaseDaoTest {
         Page<TaskGroup> page = new Page(1, 3);
         IPage<TaskGroup> taskGroupIPage = taskGroupMapper.queryTaskGroupPaging(
                 page,
-                taskGroup.getUserId(),
                 taskGroup.getName(), taskGroup.getStatus());
 
-        Assert.assertEquals(taskGroupIPage.getTotal(), 1);
+        Assertions.assertEquals(taskGroupIPage.getTotal(), 1);
     }
 }

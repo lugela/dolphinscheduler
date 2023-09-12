@@ -17,7 +17,7 @@
 
 package org.apache.dolphinscheduler.remote.processor;
 
-import org.apache.dolphinscheduler.remote.command.Command;
+import org.apache.dolphinscheduler.remote.command.Message;
 import org.apache.dolphinscheduler.remote.utils.ChannelUtils;
 import org.apache.dolphinscheduler.remote.utils.Host;
 
@@ -44,7 +44,6 @@ public class NettyRemoteChannel {
      */
     private final Host host;
 
-
     public NettyRemoteChannel(Channel channel, long opaque) {
         this.channel = channel;
         this.host = ChannelUtils.toAddress(channel);
@@ -69,15 +68,15 @@ public class NettyRemoteChannel {
         return host;
     }
 
-    public boolean isActive(){
+    public boolean isActive() {
         return this.channel.isActive();
     }
 
-    public ChannelFuture writeAndFlush(Command command) {
-        return this.channel.writeAndFlush(command);
+    public ChannelFuture writeAndFlush(Message message) {
+        return this.channel.writeAndFlush(message);
     }
 
-    public void close(){
+    public void close() {
         this.channel.close();
     }
 }

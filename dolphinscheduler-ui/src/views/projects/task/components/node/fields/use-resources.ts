@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { ref, onMounted, Ref } from 'vue'
+import { ref, onMounted, Ref, isRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { queryResourceList } from '@/service/modules/resources'
 import { useTaskNodeStore } from '@/store/project/task-node'
@@ -24,7 +24,7 @@ import type { IJsonItem, IResource } from '../types'
 
 export function useResources(
   span: number | Ref<number> = 24,
-  required = false,
+  required: boolean | Ref<boolean> = false,
   limit: number | Ref<number> = -1
 ): IJsonItem {
   const { t } = useI18n()
@@ -41,7 +41,7 @@ export function useResources(
     }
     if (resourcesLoading.value) return
     resourcesLoading.value = true
-    const res = await queryResourceList({ type: 'FILE' })
+    const res = await queryResourceList({ type: 'FILE', fullName: '' })
     utils.removeUselessChildren(res)
     resourcesOptions.value = res || []
     resourcesLoading.value = false
@@ -63,9 +63,11 @@ export function useResources(
       checkable: true,
       cascade: true,
       showPath: true,
+      filterable: true,
+      clearFilterAfterSelect: false,
       checkStrategy: 'child',
       placeholder: t('project.node.resources_tips'),
-      keyField: 'id',
+      keyField: 'fullName',
       labelField: 'name',
       loading: resourcesLoading
     },
@@ -73,8 +75,8 @@ export function useResources(
       trigger: ['input', 'blur'],
       required: required,
       validator(validate: any, value: IResource[]) {
-        if (required) {
-          if (!value) {
+        if (isRef(required) ? required.value : required) {
+          if (!value || value.length == 0) {
             return new Error(t('project.node.resources_tips'))
           }
 

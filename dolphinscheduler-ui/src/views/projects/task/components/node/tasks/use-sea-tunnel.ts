@@ -42,13 +42,43 @@ export function useSeaTunnel({
     failRetryInterval: 1,
     failRetryTimes: 0,
     workerGroup: '',
+    cpuQuota: -1,
+    memoryMax: -1,
     delayTime: 0,
     timeout: 30,
+    startupScript: 'seatunnel.sh',
+    runMode: 'RUN',
+    useCustom: true,
     deployMode: 'client',
-    queue: 'default',
-    master: 'yarn',
+    master: 'YARN',
     masterUrl: '',
-    resourceFiles: []
+    resourceFiles: [],
+    timeoutNotifyStrategy: ['WARN'],
+    rawScript:
+      'env {\n' +
+      '  execution.parallelism = 2\n' +
+      '  job.mode = "BATCH"\n' +
+      '  checkpoint.interval = 10000\n' +
+      '}\n' +
+      '\n' +
+      'source {\n' +
+      '  FakeSource {\n' +
+      '    parallelism = 2\n' +
+      '    result_table_name = "fake"\n' +
+      '    row.num = 16\n' +
+      '    schema = {\n' +
+      '      fields {\n' +
+      '        name = "string"\n' +
+      '        age = "int"\n' +
+      '      }\n' +
+      '    }\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'sink {\n' +
+      '  Console {\n' +
+      '  }\n' +
+      '}'
   } as INodeData)
 
   return {
@@ -56,12 +86,14 @@ export function useSeaTunnel({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
       Fields.useWorkerGroup(),
       Fields.useEnvironmentName(model, !data?.id),
       ...Fields.useTaskGroup(model, projectCode),
       ...Fields.useFailed(),
+      ...Fields.useResourceLimit(),
       Fields.useDelayTime(model),
       ...Fields.useTimeoutAlarm(model),
       ...Fields.useSeaTunnel(model),

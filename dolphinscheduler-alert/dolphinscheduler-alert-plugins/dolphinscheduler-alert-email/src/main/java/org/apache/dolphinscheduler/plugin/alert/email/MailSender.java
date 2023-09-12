@@ -22,13 +22,13 @@ import static java.util.Objects.requireNonNull;
 import org.apache.dolphinscheduler.alert.api.AlertConstants;
 import org.apache.dolphinscheduler.alert.api.AlertResult;
 import org.apache.dolphinscheduler.alert.api.ShowType;
+import org.apache.dolphinscheduler.common.constants.Constants;
 import org.apache.dolphinscheduler.plugin.alert.email.exception.AlertEmailException;
 import org.apache.dolphinscheduler.plugin.alert.email.template.AlertTemplate;
 import org.apache.dolphinscheduler.plugin.alert.email.template.DefaultHTMLTemplate;
-import org.apache.dolphinscheduler.spi.utils.Constants;
-import org.apache.dolphinscheduler.spi.utils.StringUtils;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
 
@@ -55,13 +55,12 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimeUtility;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import com.sun.mail.smtp.SMTPProvider;
 
+@Slf4j
 public final class MailSender {
-    private static final Logger logger = LoggerFactory.getLogger(MailSender.class);
 
     private final List<String> receivers;
     private final List<String> receiverCcs;
@@ -181,7 +180,7 @@ public final class MailSender {
                 }
 
                 if (CollectionUtils.isNotEmpty(receiverCcs)) {
-                    //cc
+                    // cc
                     for (String receiverCc : receiverCcs) {
                         email.addCc(receiverCc);
                     }
@@ -191,12 +190,13 @@ public final class MailSender {
             } catch (Exception e) {
                 handleException(alertResult, e);
             }
-        } else if (showType.equals(ShowType.ATTACHMENT.getDescp()) || showType.equals(ShowType.TABLE_ATTACHMENT.getDescp())) {
+        } else if (showType.equals(ShowType.ATTACHMENT.getDescp())
+                || showType.equals(ShowType.TABLE_ATTACHMENT.getDescp())) {
             try {
 
                 String partContent = (showType.equals(ShowType.ATTACHMENT.getDescp())
-                    ? "Please see the attachment " + title + EmailConstants.EXCEL_SUFFIX_XLSX
-                    : htmlTable(content, false));
+                        ? "Please see the attachment " + title + EmailConstants.EXCEL_SUFFIX_XLSX
+                        : htmlTable(content, false));
 
                 attachment(title, content, partContent);
 
@@ -297,6 +297,7 @@ public final class MailSender {
         props.setProperty(MailParamsConstants.MAIL_SMTP_SSL_TRUST, sslTrust);
 
         Authenticator auth = new Authenticator() {
+
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
                 // mail username and password
@@ -312,7 +313,8 @@ public final class MailSender {
     /**
      * attach content
      */
-    private void attachContent(String title, String content, String partContent, MimeMessage msg) throws MessagingException, IOException {
+    private void attachContent(String title, String content, String partContent,
+                               MimeMessage msg) throws MessagingException, IOException {
         /*
          * set receiverCc
          */
@@ -332,7 +334,8 @@ public final class MailSender {
         MimeBodyPart part2 = new MimeBodyPart();
         // add random uuid to filename to avoid potential issue
         String randomFilename = title + UUID.randomUUID();
-        File file = new File(xlsFilePath + EmailConstants.SINGLE_SLASH + randomFilename + EmailConstants.EXCEL_SUFFIX_XLSX);
+        File file =
+                new File(xlsFilePath + EmailConstants.SINGLE_SLASH + randomFilename + EmailConstants.EXCEL_SUFFIX_XLSX);
         if (!file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
         }
@@ -355,7 +358,8 @@ public final class MailSender {
     /**
      * the string object map
      */
-    private AlertResult getStringObjectMap(String title, String content, AlertResult alertResult, HtmlEmail email) throws EmailException {
+    private AlertResult getStringObjectMap(String title, String content, AlertResult alertResult,
+                                           HtmlEmail email) throws EmailException {
 
         /*
          * the subject of the message to be sent
@@ -387,12 +391,12 @@ public final class MailSender {
     public void deleteFile(File file) {
         if (file.exists()) {
             if (file.delete()) {
-                logger.info("delete success: {}", file.getAbsolutePath());
+                log.info("delete success: {}", file.getAbsolutePath());
             } else {
-                logger.info("delete fail: {}", file.getAbsolutePath());
+                log.info("delete fail: {}", file.getAbsolutePath());
             }
         } else {
-            logger.info("file not exists: {}", file.getAbsolutePath());
+            log.info("file not exists: {}", file.getAbsolutePath());
         }
     }
 
@@ -400,7 +404,7 @@ public final class MailSender {
      * handle exception
      */
     private void handleException(AlertResult alertResult, Exception e) {
-        logger.error("Send email to {} failed", receivers, e);
+        log.error("Send email to {} failed", receivers, e);
         alertResult.setMessage("Send email to {" + String.join(",", receivers) + "} failed，" + e.toString());
     }
 

@@ -17,19 +17,20 @@
 
 package org.apache.dolphinscheduler.plugin.task.api;
 
-import org.apache.dolphinscheduler.plugin.task.api.enums.ExecutionStatus;
+import org.apache.dolphinscheduler.plugin.task.api.enums.TaskExecutionStatus;
 import org.apache.dolphinscheduler.plugin.task.api.enums.TaskTimeoutStrategy;
 import org.apache.dolphinscheduler.plugin.task.api.model.Property;
 import org.apache.dolphinscheduler.plugin.task.api.parameters.resource.ResourceParametersHelper;
 
 import java.io.Serializable;
-import java.util.Date;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * to master/worker task transport
@@ -38,6 +39,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskExecutionContext implements Serializable {
 
     private static final long serialVersionUID = -1L;
@@ -55,17 +57,19 @@ public class TaskExecutionContext implements Serializable {
     /**
      * task first submit time.
      */
-    private Date firstSubmitTime;
+    private long firstSubmitTime;
 
     /**
      * task start time
      */
-    private Date startTime;
+    private long startTime;
 
     /**
      * task type
      */
     private String taskType;
+
+    private String workflowInstanceHost;
 
     /**
      * host
@@ -81,6 +85,11 @@ public class TaskExecutionContext implements Serializable {
      * log path
      */
     private String logPath;
+
+    /**
+     * applicationId path
+     */
+    private String appInfoPath;
 
     /**
      * task json
@@ -112,40 +121,30 @@ public class TaskExecutionContext implements Serializable {
      */
     private int processInstanceId;
 
-
     /**
      * process instance schedule time
      */
-    private Date scheduleTime;
+    private long scheduleTime;
 
     /**
      * process instance global parameters
      */
     private String globalParams;
 
-
     /**
      * execute user id
      */
     private int executorId;
-
 
     /**
      * command type if complement
      */
     private int cmdTypeIfComplement;
 
-
     /**
      * tenant code
      */
     private String tenantCode;
-
-    /**
-     * task queue
-     */
-    private String queue;
-
 
     /**
      * process define id
@@ -168,19 +167,20 @@ public class TaskExecutionContext implements Serializable {
     private String taskParams;
 
     /**
-     * envFile
-     */
-    private String envFile;
-
-    /**
      * environmentConfig
      */
     private String environmentConfig;
 
     /**
      * definedParams
+     * // todo: we need to rename definedParams, prepareParamsMap, paramsMap, this is confusing
      */
     private Map<String, String> definedParams;
+
+    /**
+     * prepare params map
+     */
+    private Map<String, Property> prepareParamsMap;
 
     /**
      * task AppId
@@ -210,26 +210,23 @@ public class TaskExecutionContext implements Serializable {
     /**
      * current execution status
      */
-    private ExecutionStatus currentExecutionStatus;
-
-    /**
-     * Task Logger name should be like:
-     * TaskAppId=TASK-{firstSubmitTime}-{processDefineCode}_{processDefineVersion}-{processInstanceId}-{taskInstanceId}
-     */
-    private String taskLogName;
+    private TaskExecutionStatus currentExecutionStatus;
 
     private ResourceParametersHelper resourceParametersHelper;
 
     /**
      * endTime
      */
-    private Date endTime;
+    private long endTime;
 
     /**
      * sql TaskExecutionContext
      */
     private SQLTaskExecutionContext sqlTaskExecutionContext;
-
+    /**
+     * k8s TaskExecutionContext
+     */
+    private K8sTaskExecutionContext k8sTaskExecutionContext;
     /**
      * resources full name and tenant code
      */
@@ -249,4 +246,29 @@ public class TaskExecutionContext implements Serializable {
 
     private DataQualityTaskExecutionContext dataQualityTaskExecutionContext;
 
+    /**
+     * cpu quota
+     */
+    private Integer cpuQuota;
+
+    /**
+     * max memory
+     */
+    private Integer memoryMax;
+
+    /**
+     * test flag
+     */
+    private int testFlag;
+
+    private boolean logBufferEnable;
+
+    /**
+     * dispatch fail times
+     */
+    private int dispatchFailTimes;
+
+    public void increaseDispatchFailTimes() {
+        this.dispatchFailTimes++;
+    }
 }

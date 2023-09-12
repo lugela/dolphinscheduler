@@ -46,7 +46,8 @@ import {
   ContainerOutlined,
   ApartmentOutlined,
   BarsOutlined,
-  CloudServerOutlined
+  CloudServerOutlined,
+  ClusterOutlined
 } from '@vicons/antd'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user/user'
@@ -88,6 +89,7 @@ export function useDataList() {
 
   const changeMenuOption = (state: any) => {
     const projectCode = route.params.projectCode || ''
+    const projectName = route.query.projectName || ''
     state.menuOptions = [
       {
         label: () => h(NEllipsis, null, { default: () => t('menu.home') }),
@@ -100,9 +102,27 @@ export function useDataList() {
         icon: renderIcon(ProfileOutlined),
         children: [
           {
-            label: t('menu.project_overview'),
+            label: t('menu.project') + (projectName ? `[${projectName}]` : ''),
             key: `/projects/${projectCode}`,
-            icon: renderIcon(FundProjectionScreenOutlined)
+            icon: renderIcon(FundProjectionScreenOutlined),
+            payload: { projectName: projectName },
+            children: [
+              {
+                label: t('menu.project_overview'),
+                key: `/projects/${projectCode}`,
+                payload: { projectName: projectName },
+              },
+              {
+                label: t('menu.project_parameter'),
+                key: `/projects/${projectCode}/parameter`,
+                payload: { projectName: projectName },
+              },
+              {
+                label: t('menu.project_preferences'),
+                key: `/projects/${projectCode}/preferences`,
+                payload: { projectName: projectName },
+              },
+            ]
           },
           {
             label: t('menu.workflow'),
@@ -111,15 +131,23 @@ export function useDataList() {
             children: [
               {
                 label: t('menu.workflow_relation'),
-                key: `/projects/${projectCode}/workflow/relation`
+                key: `/projects/${projectCode}/workflow/relation`,
+                payload: { projectName: projectName }
               },
               {
                 label: t('menu.workflow_definition'),
-                key: `/projects/${projectCode}/workflow-definition`
+                key: `/projects/${projectCode}/workflow-definition`,
+                payload: { projectName: projectName }
               },
               {
                 label: t('menu.workflow_instance'),
-                key: `/projects/${projectCode}/workflow/instances`
+                key: `/projects/${projectCode}/workflow/instances`,
+                payload: { projectName: projectName }
+              },
+              {
+                label: t('menu.workflow_timing'),
+                key: `/projects/${projectCode}/workflow/timings`,
+                payload: { projectName: projectName }
               }
             ]
           },
@@ -130,11 +158,13 @@ export function useDataList() {
             children: [
               {
                 label: t('menu.task_definition'),
-                key: `/projects/${projectCode}/task/definitions`
+                key: `/projects/${projectCode}/task/definitions`,
+                payload: { projectName: projectName }
               },
               {
                 label: t('menu.task_instance'),
-                key: `/projects/${projectCode}/task/instances`
+                key: `/projects/${projectCode}/task/instances`,
+                payload: { projectName: projectName }
               }
             ]
           }
@@ -291,6 +321,11 @@ export function useDataList() {
                   icon: renderIcon(EnvironmentOutlined)
                 },
                 {
+                  label: t('menu.cluster_manage'),
+                  key: '/security/cluster-manage',
+                  icon: renderIcon(ClusterOutlined)
+                },
+                {
                   label: t('menu.k8s_namespace_manage'),
                   key: '/security/k8s-namespace-manage',
                   icon: renderIcon(CloudServerOutlined)
@@ -334,7 +369,8 @@ export function useDataList() {
       {
         label: t('user_dropdown.password'),
         key: 'password',
-        icon: renderIcon(KeyOutlined)
+        icon: renderIcon(KeyOutlined),
+        disabled: userStore.getSecurityConfigType !== 'PASSWORD'
       },
       {
         label: t('user_dropdown.logout'),

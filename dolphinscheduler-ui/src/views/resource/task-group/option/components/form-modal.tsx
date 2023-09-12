@@ -22,12 +22,13 @@ import {
   onMounted,
   ref,
   Ref,
+  getCurrentInstance
 } from 'vue'
 import { NForm, NFormItem, NInput, NSelect, NInputNumber } from 'naive-ui'
 import { useForm } from '../use-form'
 import Modal from '@/components/modal'
 import { createTaskGroup, updateTaskGroup } from '@/service/modules/task-group'
-import { queryAllProjectList } from '@/service/modules/projects'
+import { queryProjectCreatedAndAuthorizedByUser } from '@/service/modules/projects'
 import { SelectMixedOption } from 'naive-ui/lib/select/src/interface'
 
 const props = {
@@ -53,7 +54,7 @@ const FormModal = defineComponent({
     const projectOptions: Ref<Array<SelectMixedOption>> = ref([])
 
     onMounted(() => {
-      queryAllProjectList().then((res: any[]) => {
+      queryProjectCreatedAndAuthorizedByUser().then((res: any[]) => {
         res.map((item) => {
           const option: SelectMixedOption = {
             label: item.name,
@@ -94,7 +95,9 @@ const FormModal = defineComponent({
       emit('cancel')
     }
 
-    return { ...toRefs(state), t, onConfirm, onCancel, projectOptions }
+    const trim = getCurrentInstance()?.appContext.config.globalProperties.trim
+
+    return { ...toRefs(state), t, onConfirm, onCancel, projectOptions, trim }
   },
   render() {
     const { t, onConfirm, onCancel, show, status, projectOptions } = this
@@ -118,6 +121,7 @@ const FormModal = defineComponent({
         <NForm rules={this.rules} ref='formRef'>
           <NFormItem label={t('resource.task_group_option.name')} path='name'>
             <NInput
+              allowInput={this.trim}
               v-model={[this.formData.name, 'value']}
               placeholder={t('resource.task_group_option.please_enter_name')}
             />
@@ -154,6 +158,7 @@ const FormModal = defineComponent({
             path='description'
           >
             <NInput
+              allowInput={this.trim}
               v-model={[this.formData.description, 'value']}
               type='textarea'
               placeholder={t('resource.task_group_option.please_enter_desc')}

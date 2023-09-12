@@ -17,6 +17,7 @@
 export type TaskType =
   | 'SHELL'
   | 'SUB_PROCESS'
+  | 'DYNAMIC'
   | 'PROCEDURE'
   | 'SQL'
   | 'SPARK'
@@ -34,13 +35,39 @@ export type TaskType =
   | 'SEATUNNEL'
   | 'EMR'
   | 'ZEPPELIN'
+  | 'K8S'
+  | 'JUPYTER'
+  | 'MLFLOW'
+  | 'OPENMLDB'
+  | 'DVC'
+  | 'JAVA'
+  | 'DINKY'
+  | 'SAGEMAKER'
+  | 'CHUNJUN'
+  | 'FLINK_STREAM'
+  | 'PYTORCH'
+  | 'HIVECLI'
+  | 'DMS'
+  | 'DATASYNC'
+  | 'KUBEFLOW'
+  | 'LINKIS'
+  | 'DATA_FACTORY'
+  | 'REMOTESHELL'
+
+export type TaskExecuteType = 'STREAM' | 'BATCH'
 
 export const TASK_TYPES_MAP = {
+  JAVA: {
+    alias: 'JAVA'
+  },
   SHELL: {
     alias: 'SHELL'
   },
   SUB_PROCESS: {
     alias: 'SUB_PROCESS'
+  },
+  DYNAMIC: {
+    alias: 'DYNAMIC'
   },
   PROCEDURE: {
     alias: 'PROCEDURE'
@@ -98,5 +125,80 @@ export const TASK_TYPES_MAP = {
   ZEPPELIN: {
     alias: 'ZEPPELIN',
     helperLinkDisable: true
+  },
+  JUPYTER: {
+    alias: 'JUPYTER',
+    helperLinkDisable: true
+  },
+  K8S: {
+    alias: 'K8S',
+    helperLinkDisable: true
+  },
+  MLFLOW: {
+    alias: 'MLFLOW',
+    helperLinkDisable: true
+  },
+  OPENMLDB: {
+    alias: 'OPENMLDB',
+    helperLinkDisable: true
+  },
+  DVC: {
+    alias: 'DVC',
+    helperLinkDisable: true
+  },
+  DINKY: {
+    alias: 'DINKY',
+    helperLinkDisable: true
+  },
+  SAGEMAKER: {
+    alias: 'SageMaker',
+    helperLinkDisable: true
+  },
+  CHUNJUN: {
+    alias: 'CHUNJUN',
+    helperLinkDisable: true
+  },
+  FLINK_STREAM: {
+    alias: 'FLINK_STREAM',
+    helperLinkDisable: true,
+    taskExecuteType: 'STREAM'
+  },
+  PYTORCH: {
+    alias: 'Pytorch',
+    helperLinkDisable: true
+  },
+  HIVECLI: {
+    alias: 'HIVECLI',
+    helperLinkDisable: true
+  },
+  DMS: {
+    alias: 'DMS',
+    helperLinkDisable: true
+  },
+  DATASYNC: {
+    alias: 'DATASYNC',
+    helperLinkDisable: true
+  },
+  KUBEFLOW: {
+    alias: 'KUBEFLOW',
+    helperLinkDisable: true
+  },
+  LINKIS: {
+    alias: 'LINKIS',
+    helperLinkDisable: true
+  },
+  DATA_FACTORY: {
+    alias: 'DATA_FACTORY',
+    helperLinkDisable: true
+  },
+  REMOTESHELL: {
+    alias: 'REMOTESHELL',
+    helperLinkDisable: true
   }
-} as { [key in TaskType]: { alias: string; helperLinkDisable?: boolean } }
+} as {
+  [key in TaskType]: {
+    alias: string
+    helperLinkDisable?: boolean
+    taskExecuteType?: TaskExecuteType
+  }
+}

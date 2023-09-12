@@ -42,7 +42,6 @@ public class ProcessDefinitionLog extends ProcessDefinition {
     }
 
     public ProcessDefinitionLog(ProcessDefinition processDefinition) {
-        this.setId(processDefinition.getId());
         this.setCode(processDefinition.getCode());
         this.setName(processDefinition.getName());
         this.setVersion(processDefinition.getVersion());
@@ -61,7 +60,6 @@ public class ProcessDefinitionLog extends ProcessDefinition {
         this.setLocations(processDefinition.getLocations());
         this.setScheduleReleaseState(processDefinition.getScheduleReleaseState());
         this.setTimeout(processDefinition.getTimeout());
-        this.setTenantId(processDefinition.getTenantId());
         this.setModifyBy(processDefinition.getModifyBy());
         this.setWarningGroupId(processDefinition.getWarningGroupId());
         this.setExecutionType(processDefinition.getExecutionType());

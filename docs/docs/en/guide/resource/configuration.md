@@ -1,7 +1,7 @@
 # Resource Center Configuration
 
 - You could use `Resource Center` to upload text files, UDFs and other task-related files.
-- You could configure `Resource Center` to use distributed file system like [Hadoop](https://hadoop.apache.org/docs/r2.7.0/) (2.6+), [MinIO](https://github.com/minio/minio) cluster or remote storage products like [AWS S3](https://aws.amazon.com/s3/), [Alibaba Cloud OSS](https://www.aliyun.com/product/oss), etc.
+- You could configure `Resource Center` to use distributed file system like [Hadoop](https://hadoop.apache.org/docs/r2.7.0/) (2.6+), [MinIO](https://github.com/minio/minio) cluster or remote storage products like [AWS S3](https://aws.amazon.com/s3/), [Alibaba Cloud OSS](https://www.aliyun.com/product/oss), [Huawei Cloud OBS](https://support.huaweicloud.com/obs/index.html) etc.
 - You could configure `Resource Center` to use local file system. If you deploy `DolphinScheduler` in `Standalone` mode, you could configure it to use local file system for `Resouce Center` without the need of an external `HDFS` system or `S3`.
 - Furthermore, if you deploy `DolphinScheduler` in `Cluster` mode, you could use [S3FS-FUSE](https://github.com/s3fs-fuse/s3fs-fuse) to mount `S3` or [JINDO-FUSE](https://help.aliyun.com/document_detail/187410.html) to mount `OSS` to your machines and use the local file system for `Resouce Center`. In this way, you could operate remote files as if on your local machines.
 
@@ -9,21 +9,52 @@
 
 ### Configure `common.properties`
 
-If you deploy DolphinScheduler in `Cluster` or `Pseudo-Cluster` mode, you need to configure `api-server/conf/common.properties` and `worker-server/conf/common.properties`.
-If you deploy DolphinScheduler in `Standalone` mode, you only need to configure `standalone-server/conf/common.properties` as follows:
+DolphinScheduler Resource Center uses local file system by default, and does not require any additional configuration.
+But please make sure to change the following configuration at the same time when you need to modify the default value.
+
+- If you deploy DolphinScheduler in `Cluster` or `Pseudo-Cluster` mode, you need to configure `api-server/conf/common.properties` and `worker-server/conf/common.properties`.
+- If you deploy DolphinScheduler in `Standalone` mode, you only need to configure `standalone-server/conf/common.properties` as follows:
+
+The configuration you may need to change:
 
 - Change `resource.storage.upload.base.path` to your local directory path. Please make sure the `tenant resource.hdfs.root.user` has read and write permissions for `resource.storage.upload.base.path`, e,g. `/tmp/dolphinscheduler`. `DolphinScheduler` will create the directory you configure if it does not exist.
-- Modify `resource.storage.type=HDFS` and `resource.hdfs.fs.defaultFS=file:///`.
 
-> NOTE: Please modify the value of `resource.storage.upload.base.path` if you do not want to use the default value as the base path.
+> NOTE:
+> 1. LOCAL mode does not support reading and writing in distributed mode, which mean you can only use your resource in one machine, unless use shared file mount point
+> 2. Please modify the value of `resource.storage.upload.base.path` if you do not want to use the default value as the base path.
+> 3. The local config is `resource.storage.type=LOCAL` it has actually configured two setting, `resource.storage.type=HDFS`
+> and `resource.hdfs.fs.defaultFS=file:///`, The configuration of `resource.storage.type=LOCAL` is for user-friendly, and enables
+> the local resource center to be enabled by default
 
-## HDFS Resource Configuration
+## connect AWS S3
 
-When it is necessary to use the Resource Center to create or upload relevant files, all files and resources will be stored on HDFS. Therefore the following configuration is required.
+if you want to upload resources to `Resource Center` connected to `S3`, you need to configure `api-server/conf/common.properties` and `worker-server/conf/common.properties`. You can refer to the following:
 
-## Configuring the common.properties
+config the following fields
 
-After version 3.0.0-alpha, if you want to upload resources to `Resource Center` connected to `HDFS` or `S3`, you need to configure `api-server/conf/common.properties` and `worker-server/conf/common.properties`.
+```properties
+......
+
+resource.storage.type=S3
+
+......
+
+resource.aws.access.key.id=aws_access_key_id
+# The AWS secret access key. if resource.storage.type=S3 or use EMR-Task, This configuration is required
+resource.aws.secret.access.key=aws_secret_access_key
+# The AWS Region to use. if resource.storage.type=S3 or use EMR-Task, This configuration is required
+resource.aws.region=us-west-2
+# The name of the bucket. You need to create them by yourself. Otherwise, the system cannot start. All buckets in Amazon S3 share a single namespace; ensure the bucket is given a unique name.
+resource.aws.s3.bucket.name=dolphinscheduler
+# You need to set this parameter when private cloud s4. If S3 uses public cloud, you only need to set resource.aws.region or set to the endpoint of a public cloud such as S3.cn-north-1.amazonaws.com.cn
+resource.aws.s3.endpoint=
+
+......
+```
+
+## Use HDFS or Remote Object Storage
+
+After version 3.0.0-alpha, if you want to upload resources to `Resource Center` connected to `HDFS`, you need to configure `api-server/conf/common.properties` and `worker-server/conf/common.properties`.
 
 ```properties
 #
@@ -49,9 +80,9 @@ data.basedir.path=/tmp/dolphinscheduler
 # resource view suffixs
 #resource.view.suffixs=txt,log,sh,bat,conf,cfg,py,java,sql,xml,hql,properties,json,yml,yaml,ini,js
 
-# resource storage type: HDFS, S3, NONE
+# resource storage type: LOCAL, HDFS, S3, OSS, GCS, ABS, OBS, NONE
 resource.storage.type=NONE
-# resource store on HDFS/S3 path, resource file will store to this base path, self configuration, please make sure the directory exists on hdfs and have read write permissions. "/dolphinscheduler" is recommended
+# resource store on HDFS/S3/OSS path, resource file will store to this base path, self configuration, please make sure the directory exists on hdfs and have read write permissions. "/dolphinscheduler" is recommended
 resource.storage.upload.base.path=/tmp/dolphinscheduler
 
 # The AWS access key. if resource.storage.type=S3 or use EMR-Task, This configuration is required
@@ -65,26 +96,30 @@ resource.aws.s3.bucket.name=dolphinscheduler
 # You need to set this parameter when private cloud s3. If S3 uses public cloud, you only need to set resource.aws.region or set to the endpoint of a public cloud such as S3.cn-north-1.amazonaws.com.cn
 resource.aws.s3.endpoint=http://localhost:9000
 
-# resource store on HDFS/S3 path, resource file will store to this hadoop hdfs path, self configuration,
-# please make sure the directory exists on hdfs and have read write permissions. "/dolphinscheduler" is recommended
-resource.storage.upload.base.path=/tmp/dolphinscheduler
+# alibaba cloud access key id, required if you set resource.storage.type=OSS 
+resource.alibaba.cloud.access.key.id=<your-access-key-id>
+# alibaba cloud access key secret, required if you set resource.storage.type=OSS
+resource.alibaba.cloud.access.key.secret=<your-access-key-secret>
+# alibaba cloud region, required if you set resource.storage.type=OSS
+resource.alibaba.cloud.region=cn-hangzhou
+# oss bucket name, required if you set resource.storage.type=OSS
+resource.alibaba.cloud.oss.bucket.name=dolphinscheduler
+# oss bucket endpoint, required if you set resource.storage.type=OSS
+resource.alibaba.cloud.oss.endpoint=https://oss-cn-hangzhou.aliyuncs.com
 
-# The AWS access key. if resource.storage.type=S3 or use EMR-Task, This configuration is required
-resource.aws.access.key.id=minioadmin
-# The AWS secret access key. if resource.storage.type=S3 or use EMR-Task, This configuration is required
-resource.aws.secret.access.key=minioadmin
-# The AWS Region to use. if resource.storage.type=S3 or use EMR-Task, This configuration is required
-resource.aws.region=cn-north-1
-# The name of the bucket. You need to create them by yourself. Otherwise, the system cannot start. All buckets in Amazon S3 share a single namespace; ensure the bucket is given a unique name.
-resource.aws.s3.bucket.name=dolphinscheduler
-# You need to set this parameter when private cloud s3. If S3 uses public cloud, you only need to set resource.aws.region or set to the endpoint of a public cloud such as S3.cn-north-1.amazonaws.com.cn
-resource.aws.s3.endpoint=http://localhost:9000
+# alibaba cloud access key id, required if you set resource.storage.type=OBS
+resource.huawei.cloud.access.key.id=<your-access-key-id>
+# alibaba cloud access key secret, required if you set resource.storage.type=OBS
+resource.huawei.cloud.access.key.secret=<your-access-key-secret>
+# oss bucket name, required if you set resource.storage.type=OBS
+resource.huawei.cloud.obs.bucket.name=dolphinscheduler
+# oss bucket endpoint, required if you set resource.storage.type=OBS
+resource.huawei.cloud.obs.endpoint=obs.cn-southwest-2.huaweicloud.com
 
 # if resource.storage.type=HDFS, the user must have the permission to create directories under the HDFS root path
-resource.hdfs.root.user=root
-# if resource.storage.type=S3, the value like: s3a://dolphinscheduler;
-# if resource.storage.type=HDFS and namenode HA is enabled, you need to copy core-site.xml and hdfs-site.xml to conf dir
-resource.hdfs.fs.defaultFS=hdfs://localhost:8020
+resource.hdfs.root.user=hdfs
+# if resource.storage.type=S3, the value like: s3a://dolphinscheduler; if resource.storage.type=HDFS and namenode HA is enabled, you need to copy core-site.xml and hdfs-site.xml to conf dir
+resource.hdfs.fs.defaultFS=hdfs://mycluster:8020
 
 # whether to startup kerberos
 hadoop.security.authentication.startup.state=false
@@ -101,8 +136,6 @@ login.user.keytab.path=/opt/hdfs.headless.keytab
 # kerberos expire time, the unit is hour
 kerberos.expire.time=2
 
-# resource view suffixs
-#resource.view.suffixs=txt,log,sh,bat,conf,cfg,py,java,sql,xml,hql,properties,json,yml,yaml,ini,js
 
 # resourcemanager port, the default value is 8088 if not specified
 resource.manager.httpaddress.port=8088
@@ -147,14 +180,14 @@ development.state=false
 # rpc port
 alert.rpc.port=50052
 
-# Url endpoint for zeppelin RESTful API
-zeppelin.rest.url=http://localhost:8080
-
 # set path of conda.sh
 conda.path=/opt/anaconda3/etc/profile.d/conda.sh
 
 # Task resource limit state
 task.resource.limit.state=false
+
+# way to collect applicationId: log(original regex match), aop
+appId.collect: log
 ```
 
 > **Note:**

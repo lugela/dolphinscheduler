@@ -17,84 +17,100 @@
 
 package org.apache.dolphinscheduler.plugin.task.api;
 
-import org.apache.dolphinscheduler.plugin.task.api.model.ResourceInfo;
-import org.apache.dolphinscheduler.plugin.task.api.model.TaskResponse;
+import static org.apache.dolphinscheduler.common.constants.Constants.APPID_COLLECT;
+import static org.apache.dolphinscheduler.common.constants.Constants.DEFAULT_COLLECT_WAY;
 
-/**
- * abstract yarn task
- */
-public abstract class AbstractYarnTask extends AbstractTaskExecutor {
-    /**
-     * process task
-     */
+import org.apache.dolphinscheduler.common.utils.PropertyUtils;
+import org.apache.dolphinscheduler.plugin.task.api.model.TaskResponse;
+import org.apache.dolphinscheduler.plugin.task.api.shell.IShellInterceptorBuilder;
+import org.apache.dolphinscheduler.plugin.task.api.shell.ShellInterceptorBuilderFactory;
+import org.apache.dolphinscheduler.plugin.task.api.utils.LogUtils;
+
+import java.util.List;
+import java.util.Map;
+
+public abstract class AbstractYarnTask extends AbstractRemoteTask {
+
     private ShellCommandExecutor shellCommandExecutor;
 
-    /**
-     * Abstract Yarn Task
-     *
-     * @param taskRequest taskRequest
-     */
     public AbstractYarnTask(TaskExecutionContext taskRequest) {
         super(taskRequest);
         this.shellCommandExecutor = new ShellCommandExecutor(this::logHandle,
-            taskRequest,
-            logger);
+                taskRequest,
+                log);
     }
 
+    // todo split handle to submit and track
     @Override
-    public void handle() throws Exception {
+    public void handle(TaskCallBack taskCallBack) throws TaskException {
         try {
+            IShellInterceptorBuilder shellActuatorBuilder = ShellInterceptorBuilderFactory.newBuilder()
+                    .properties(getProperties())
+                    // todo: do we need to move the replace to subclass?
+                    .appendScript(getScript().replaceAll("\\r\\n", System.lineSeparator()));
             // SHELL task exit code
-            TaskResponse response = shellCommandExecutor.run(buildCommand());
+            TaskResponse response = shellCommandExecutor.run(shellActuatorBuilder, taskCallBack);
             setExitStatusCode(response.getExitStatusCode());
-            setAppIds(response.getAppIds());
+            // set appIds
+            setAppIds(String.join(TaskConstants.COMMA, getApplicationIds()));
             setProcessId(response.getProcessId());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            log.info("The current yarn task has been interrupted", ex);
+            setExitStatusCode(TaskConstants.EXIT_CODE_FAILURE);
+            throw new TaskException("The current yarn task has been interrupted", ex);
         } catch (Exception e) {
-            logger.error("yarn process failure", e);
+            log.error("yarn process failure", e);
             exitStatusCode = -1;
-            throw e;
+            throw new TaskException("Execute task failed", e);
         }
+    }
+
+    // todo
+    @Override
+    public void submitApplication() throws TaskException {
+
+    }
+
+    // todo
+    @Override
+    public void trackApplicationStatus() throws TaskException {
+
     }
 
     /**
      * cancel application
      *
-     * @param status status
-     * @throws Exception exception
+     * @throws TaskException exception
      */
     @Override
-    public void cancelApplication(boolean status) throws Exception {
-        cancel = true;
+    public void cancelApplication() throws TaskException {
         // cancel process
-        shellCommandExecutor.cancelApplication();
-    }
-
-    /**
-     * create command
-     *
-     * @return String
-     */
-    protected abstract String buildCommand();
-
-    /**
-     * set main jar name
-     */
-    protected abstract void setMainJarName();
-
-    /**
-     * Get name of jar resource.
-     *
-     * @param mainJar
-     * @return
-     */
-    protected String getResourceNameOfMainJar(ResourceInfo mainJar) {
-        if (null == mainJar) {
-            throw new RuntimeException("The jar for the task is required.");
+        try {
+            shellCommandExecutor.cancelApplication();
+        } catch (Exception e) {
+            throw new TaskException("cancel application error", e);
         }
-
-        return mainJar.getId() == 0
-            ? mainJar.getRes()
-            // when update resource maybe has error
-            : mainJar.getResourceName().replaceFirst("/", "");
     }
+
+    /**
+     * get application ids
+     * @return
+     * @throws TaskException
+     */
+    @Override
+    public List<String> getApplicationIds() throws TaskException {
+        return LogUtils.getAppIds(taskRequest.getLogPath(), taskRequest.getAppInfoPath(),
+                PropertyUtils.getString(APPID_COLLECT, DEFAULT_COLLECT_WAY));
+    }
+
+    /**
+     * Get the script used to bootstrap the task
+     */
+    protected abstract String getScript();
+
+    /**
+     * Get the properties of the task used to replace the placeholders in the script.
+     */
+    protected abstract Map<String, String> getProperties();
 }

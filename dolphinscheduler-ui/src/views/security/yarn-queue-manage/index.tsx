@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-import { defineComponent, onMounted, toRefs, watch } from 'vue'
 import {
-  NButton,
-  NCard,
-  NDataTable,
-  NIcon,
-  NInput,
-  NPagination,
-  NSpace
-} from 'naive-ui'
+  defineComponent,
+  getCurrentInstance,
+  onMounted,
+  toRefs,
+  watch
+} from 'vue'
+import { NButton, NDataTable, NIcon, NPagination, NSpace } from 'naive-ui'
 import { SearchOutlined } from '@vicons/antd'
 import { useI18n } from 'vue-i18n'
 import { useTable } from './use-table'
-import Card from '@/components/card'
 import YarnQueueModal from './components/yarn-queue-modal'
-import styles from './index.module.scss'
+import Card from '@/components/card'
+import Search from '@/components/input-search'
 
 const yarnQueueManage = defineComponent({
   name: 'yarn-queue-manage',
@@ -70,6 +68,8 @@ const yarnQueueManage = defineComponent({
       requestData()
     }
 
+    const trim = getCurrentInstance()?.appContext.config.globalProperties.trim
+
     onMounted(() => {
       createColumns(variables)
       requestData()
@@ -87,7 +87,8 @@ const yarnQueueManage = defineComponent({
       onConfirmModal,
       onUpdatePageSize,
       handleModalChange,
-      onSearch
+      onSearch,
+      trim
     }
   },
   render() {
@@ -103,57 +104,52 @@ const yarnQueueManage = defineComponent({
     } = this
 
     return (
-      <div>
-        <NCard>
-          <div class={styles['search-card']}>
-            <div>
-              <NButton
-                size='small'
-                type='primary'
-                onClick={handleModalChange}
-                class='btn-create-queue'
-              >
-                {t('security.yarn_queue.create_queue')}
-              </NButton>
-            </div>
+      <NSpace vertical>
+        <Card>
+          <NSpace justify='space-between'>
+            <NButton
+              size='small'
+              type='primary'
+              onClick={handleModalChange}
+              class='btn-create-queue'
+            >
+              {t('security.yarn_queue.create_queue')}
+            </NButton>
             <NSpace>
-              <NInput
-                size='small'
-                clearable
-                v-model={[this.searchVal, 'value']}
+              <Search
+                v-model:value={this.searchVal}
                 placeholder={t('security.yarn_queue.search_tips')}
+                onSearch={onSearch}
               />
               <NButton size='small' type='primary' onClick={onSearch}>
-                {{
-                  icon: () => (
-                    <NIcon>
-                      <SearchOutlined />
-                    </NIcon>
-                  )
-                }}
+                <NIcon>
+                  <SearchOutlined />
+                </NIcon>
               </NButton>
             </NSpace>
-          </div>
-        </NCard>
-        <Card class={styles['table-card']}>
-          <NDataTable
-            loading={loadingRef}
-            row-class-name='items'
-            columns={this.columns}
-            data={this.tableData}
-          />
-          <div class={styles.pagination}>
-            <NPagination
-              v-model:page={this.page}
-              v-model:page-size={this.pageSize}
-              page-count={this.totalPage}
-              show-size-picker
-              page-sizes={[10, 30, 50]}
-              show-quick-jumper
-              onUpdatePage={requestData}
-              onUpdatePageSize={onUpdatePageSize}
+          </NSpace>
+        </Card>
+        <Card title={t('menu.yarn_queue_manage')}>
+          <NSpace vertical>
+            <NDataTable
+              loading={loadingRef}
+              row-class-name='items'
+              columns={this.columns}
+              data={this.tableData}
             />
-          </div>
+            <NSpace justify='center'>
+              <NPagination
+                v-model:page={this.page}
+                v-model:page-size={this.pageSize}
+                page-count={this.totalPage}
+                show-size-picker
+                page-sizes={[10, 30, 50]}
+                show-quick-jumper
+                onUpdatePage={requestData}
+                onUpdatePageSize={onUpdatePageSize}
+              />
+            </NSpace>
+          </NSpace>
         </Card>
         <YarnQueueModal
           showModalRef={this.showModalRef}
@@ -162,7 +158,7 @@ const yarnQueueManage = defineComponent({
           onCancelModal={onCancelModal}
           onConfirmModal={onConfirmModal}
         />
-      </div>
+      </NSpace>
     )
   }
 })

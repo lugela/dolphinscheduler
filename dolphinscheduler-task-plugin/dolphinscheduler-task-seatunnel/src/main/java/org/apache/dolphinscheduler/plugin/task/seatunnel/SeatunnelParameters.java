@@ -20,13 +20,26 @@ package org.apache.dolphinscheduler.plugin.task.seatunnel;
 import org.apache.dolphinscheduler.plugin.task.api.model.ResourceInfo;
 import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
 
-import java.util.List;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 
+import java.util.List;
+import java.util.Objects;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
 public class SeatunnelParameters extends AbstractParameters {
 
-    /**
-     * shell script
-     */
+    private String startupScript;
+
+    private Boolean useCustom;
+
     private String rawScript;
 
     /**
@@ -34,25 +47,12 @@ public class SeatunnelParameters extends AbstractParameters {
      */
     private List<ResourceInfo> resourceList;
 
-    public String getRawScript() {
-        return rawScript;
-    }
-
-    public void setRawScript(String rawScript) {
-        this.rawScript = rawScript;
-    }
-
-    public List<ResourceInfo> getResourceList() {
-        return resourceList;
-    }
-
-    public void setResourceList(List<ResourceInfo> resourceList) {
-        this.resourceList = resourceList;
-    }
-
     @Override
     public boolean checkParameters() {
-        return rawScript != null && !rawScript.isEmpty();
+        return Objects.nonNull(startupScript)
+                && ((BooleanUtils.isTrue(useCustom) && StringUtils.isNotBlank(rawScript))
+                        || (BooleanUtils.isFalse(useCustom) && CollectionUtils.isNotEmpty(resourceList)
+                                && resourceList.size() == 1));
     }
 
     @Override
